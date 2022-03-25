@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { StreamDataDto } from "src/dto/stream-data.dto";
 import { IIntervals } from "src/interfaces/intervals.interface";
+import { IRelativePinchStream } from "src/interfaces/relative-pinch-stream.interface";
 import { IStreamData } from "src/interfaces/stream-data.interface";
 
 @Injectable()
@@ -83,5 +84,58 @@ export class StreamProcessingUtility {
     return intervals;
   }
 
-  streamRelativlyPinch(streams: IStreamData[]) {}
+  streamsRelativlyPinch(
+    streams: IStreamData[],
+    hotPinchPoint: number,
+    coldPinchPoint: number,
+  ): IRelativePinchStream[] {
+    const relativPinchStreams: IRelativePinchStream[] = [];
+    for (let stream of streams) {
+      if (stream.streamType === "hot" && stream.outletTemp !== hotPinchPoint) {
+        relativPinchStreams.push({
+          parentId: stream.id,
+          inletTemp: stream.inletTemp,
+          outletTemp: hotPinchPoint,
+          massFlow: stream.massFlow,
+          heatCapacity: stream.heatCapacity,
+          flowHeatCapacity: stream.flowHeatCapacity,
+          streamType: stream.streamType,
+          relativePinch: "above",
+        });
+        relativPinchStreams.push({
+          parentId: stream.id,
+          inletTemp: hotPinchPoint,
+          outletTemp: stream.outletTemp,
+          massFlow: stream.massFlow,
+          heatCapacity: stream.heatCapacity,
+          flowHeatCapacity: stream.flowHeatCapacity,
+          streamType: stream.streamType,
+          relativePinch: "below",
+        });
+      } else if (stream.streamType === "cold" && stream.inletTemp !== coldPinchPoint) {
+        relativPinchStreams.push({
+          parentId: stream.id,
+          inletTemp: coldPinchPoint,
+          outletTemp: stream.outletTemp,
+          massFlow: stream.massFlow,
+          heatCapacity: stream.heatCapacity,
+          flowHeatCapacity: stream.flowHeatCapacity,
+          streamType: stream.streamType,
+          relativePinch: "above",
+        });
+        relativPinchStreams.push({
+          parentId: stream.id,
+          inletTemp: stream.inletTemp,
+          outletTemp: coldPinchPoint,
+          massFlow: stream.massFlow,
+          heatCapacity: stream.heatCapacity,
+          flowHeatCapacity: stream.flowHeatCapacity,
+          streamType: stream.streamType,
+          relativePinch: "below",
+        });
+      }
+    }
+
+    return relativPinchStreams;
+  }
 }

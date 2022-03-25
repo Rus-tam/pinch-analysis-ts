@@ -98,9 +98,12 @@ export class AppService {
   }
 
   exchangerSetup(streams: IStreamData[]) {
-    console.log(streams[0]);
-    const shiftedStreams = this.streamProcUtility.shiftedStreamMaker(streams);
-    console.log(streams[0]);
-    console.log(shiftedStreams[0]);
+    const { hotPinchPoint, coldPinchPoint } = this.pinchPointFinder(streams);
+    const streamRelPinch = this.streamProcUtility.streamsRelativlyPinch(
+      streams,
+      hotPinchPoint,
+      coldPinchPoint,
+    );
+    console.log(streamRelPinch);
   }
 }
