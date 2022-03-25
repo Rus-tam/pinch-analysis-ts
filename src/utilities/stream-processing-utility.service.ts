@@ -18,7 +18,23 @@ export class StreamProcessingUtility {
   }
 
   shiftedStreamMaker(streams: IStreamData[]): IStreamData[] {
+    const shiftedStreams = [];
+    // Если просто спред оператором приравнять списки shiftedStreams и streams, то они начинают по всему
+    // проекту приравниваться. Прототипы и всякое такое
     for (let stream of streams) {
+      shiftedStreams.push({
+        id: stream.id,
+        inletTemp: stream.inletTemp,
+        outletTemp: stream.outletTemp,
+        massFlow: stream.massFlow,
+        heatCapacity: stream.heatCapacity,
+        flowHeatCapacity: stream.flowHeatCapacity,
+        streamType: stream.streamType,
+        deltaT: stream.deltaT,
+      });
+    }
+
+    for (let stream of shiftedStreams) {
       if (stream.streamType === "hot") {
         stream.inletTemp = stream.inletTemp - stream.deltaT / 2;
         stream.outletTemp = stream.outletTemp - stream.deltaT / 2;
@@ -27,7 +43,7 @@ export class StreamProcessingUtility {
         stream.outletTemp = stream.outletTemp + stream.deltaT / 2;
       }
     }
-    return streams;
+    return shiftedStreams;
   }
 
   intervalMaker(streams: IStreamData[]): IIntervals[] {
@@ -66,4 +82,6 @@ export class StreamProcessingUtility {
 
     return intervals;
   }
+
+  streamRelativlyPinch(streams: IStreamData[]) {}
 }

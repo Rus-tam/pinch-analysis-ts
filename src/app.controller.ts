@@ -1,19 +1,21 @@
 import { Body, Controller, Get, Post } from "@nestjs/common";
 import { AppService } from "./app.service";
 import { StreamDataDto } from "./dto/stream-data.dto";
+import { StreamProcessingUtility } from "./utilities/stream-processing-utility.service";
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(
+    private readonly appService: AppService,
+    private readonly streamProcUtil: StreamProcessingUtility,
+  ) {}
 
   @Post()
   pinchPointFinder(@Body() streamsData: StreamDataDto) {
+    const streams = this.streamProcUtil.streamTypeDefiner(streamsData);
     const { hotPinchPoint, coldPinchPoint, hotUtilitiesAmount, coldUtilitiesAmount } =
-      this.appService.pinchPointFinder(streamsData);
+      this.appService.pinchPointFinder(streams);
 
-    console.log("Hot pinch point", hotPinchPoint);
-    console.log("Cold pinch point", coldPinchPoint);
-    console.log("Hot utilities", hotUtilitiesAmount);
-    console.log("Cold utilities", coldUtilitiesAmount);
+    this.appService.exchangerSetup(streams);
   }
 }

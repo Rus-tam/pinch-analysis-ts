@@ -1,5 +1,4 @@
 import { Injectable } from "@nestjs/common";
-import { StreamDataDto } from "./dto/stream-data.dto";
 import { IStreamData } from "./interfaces/stream-data.interface";
 import { StreamProcessingUtility } from "./utilities/stream-processing-utility.service";
 
@@ -7,7 +6,7 @@ import { StreamProcessingUtility } from "./utilities/stream-processing-utility.s
 export class AppService {
   constructor(private readonly streamProcUtility: StreamProcessingUtility) {}
 
-  pinchPointFinder(streamsData: StreamDataDto): {
+  pinchPointFinder(streams: IStreamData[]): {
     hotPinchPoint: number;
     coldPinchPoint: number;
     hotUtilitiesAmount: number;
@@ -23,10 +22,10 @@ export class AppService {
     let hotPinchPoint = 0;
     let hotUtilitiesAmount = 0;
     let coldUtilitiesAmount = 0;
-    const { streams, shiftedStreams } = this.shiftedStreamMaker(streamsData);
-    const intervals = this.streamProcUtility.intervalMaker(streams);
+    const shiftedStreams = this.streamProcUtility.shiftedStreamMaker(streams);
+    const intervals = this.streamProcUtility.intervalMaker(shiftedStreams);
     // Тут будут храниться данные о потоках чьи температуры выставлены в порядке возрастания
-    const modifiedStreams: IStreamData[] = [...streams];
+    const modifiedStreams: IStreamData[] = [...shiftedStreams];
     for (let stream of modifiedStreams) {
       if (stream.inletTemp > stream.outletTemp) {
         let temp = stream.inletTemp;
@@ -98,13 +97,10 @@ export class AppService {
     return { hotPinchPoint, coldPinchPoint, hotUtilitiesAmount, coldUtilitiesAmount };
   }
 
-  private shiftedStreamMaker(streamsData: StreamDataDto): {
-    streams: IStreamData[];
-    shiftedStreams: IStreamData[];
-  } {
-    const streams = this.streamProcUtility.streamTypeDefiner(streamsData);
+  exchangerSetup(streams: IStreamData[]) {
+    console.log(streams[0]);
     const shiftedStreams = this.streamProcUtility.shiftedStreamMaker(streams);
-
-    return { streams, shiftedStreams };
+    console.log(streams[0]);
+    console.log(shiftedStreams[0]);
   }
 }
