@@ -104,6 +104,6 @@ export class AppService {
       hotPinchPoint,
       coldPinchPoint,
     );
-    console.log(streamRelPinch);
+    const splitedStreams = this.streamProcUtility.streamSpliting(streamRelPinch);
   }
 }
