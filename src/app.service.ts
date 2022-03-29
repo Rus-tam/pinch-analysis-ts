@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { StreamDto } from "./dto/stream.dto";
 import { IStreamData } from "./interfaces/stream-data.interface";
 import { StreamProcessingUtility } from "./utilities/stream-processing-utility.service";
 
@@ -25,7 +26,19 @@ export class AppService {
     const shiftedStreams = this.streamProcUtility.shiftedStreamMaker(streams);
     const intervals = this.streamProcUtility.intervalMaker(shiftedStreams);
     // Тут будут храниться данные о потоках чьи температуры выставлены в порядке возрастания
-    const modifiedStreams: IStreamData[] = [...shiftedStreams];
+    const modifiedStreams: IStreamData[] = [];
+    for (let stream of shiftedStreams) {
+      modifiedStreams.push({
+        id: stream.id,
+        inletTemp: stream.inletTemp,
+        outletTemp: stream.outletTemp,
+        massFlow: stream.massFlow,
+        heatCapacity: stream.heatCapacity,
+        flowHeatCapacity: stream.flowHeatCapacity,
+        streamType: stream.streamType,
+        deltaT: stream.deltaT,
+      });
+    }
     for (let stream of modifiedStreams) {
       if (stream.inletTemp > stream.outletTemp) {
         let temp = stream.inletTemp;
@@ -55,19 +68,19 @@ export class AppService {
         ? (intervals[i].heatStatus = "heatExcess")
         : (intervals[i].heatStatus = "heatLack");
       if (i === 0) {
-        intervals[i].incomingHeat = 0;
-        intervals[i].outgoingHeat = intervals[i].incomingHeat - intervals[i].deltaH;
-        intervals[i].incomingHeat < 0 && intervals[i].outgoingHeat < 0
+        intervals[i].incomingHeatV1 = 0;
+        intervals[i].outgoingHeatV1 = intervals[i].incomingHeatV1 - intervals[i].deltaH;
+        intervals[i].incomingHeatV1 < 0 && intervals[i].outgoingHeatV1 < 0
           ? (isNegativeValue = true)
           : null;
       } else {
-        intervals[i].incomingHeat = intervals[i - 1].outgoingHeat;
-        intervals[i].outgoingHeat = intervals[i].incomingHeat - intervals[i].deltaH;
-        intervals[i].incomingHeat < 0 && intervals[i].outgoingHeat < 0
+        intervals[i].incomingHeatV1 = intervals[i - 1].outgoingHeatV1;
+        intervals[i].outgoingHeatV1 = intervals[i].incomingHeatV1 - intervals[i].deltaH;
+        intervals[i].incomingHeatV1 < 0 && intervals[i].outgoingHeatV1 < 0
           ? (isNegativeValue = true)
           : null;
       }
-      minValue > intervals[i].outgoingHeat ? (minValue = intervals[i].outgoingHeat) : null;
+      minValue > intervals[i].outgoingHeatV1 ? (minValue = intervals[i].outgoingHeatV1) : null;
       streamId = [];
       hotFlowHeatCap = 0;
       coldFlowHeatCap = 0;
@@ -104,6 +117,7 @@ export class AppService {
       hotPinchPoint,
       coldPinchPoint,
     );
-    const splitedStreams = this.streamProcUtility.streamSpliting(streamRelPinch);
+    const { hotStreamsTop, coldStreamsTop, hotStreamsBot, coldStreamsBot } =
+      this.streamProcUtility.streamSpliting(streamRelPinch);
   }
 }

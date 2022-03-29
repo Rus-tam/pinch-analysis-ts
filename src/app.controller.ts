@@ -16,6 +16,13 @@ export class AppController {
     const { hotPinchPoint, coldPinchPoint, hotUtilitiesAmount, coldUtilitiesAmount } =
       this.appService.pinchPointFinder(streams);
 
+    console.log("Hot Pinch", hotPinchPoint);
+    console.log("Cold Pinch", coldPinchPoint);
+    console.log("Hot utilities", hotUtilitiesAmount);
+    console.log("Cold Utilities", coldUtilitiesAmount);
+    console.log("_____________________");
+    // console.log(streams);
+
     this.appService.exchangerSetup(streams);
   }
 }

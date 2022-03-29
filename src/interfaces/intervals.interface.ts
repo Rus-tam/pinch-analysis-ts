@@ -7,6 +7,8 @@ export interface IIntervals {
   heatCapDivision: number;
   deltaH: number;
   heatStatus: string;
+  incomingHeatV1: number;
+  outgoingHeatV1: number;
   incomingHeat: number;
   outgoingHeat: number;
 }

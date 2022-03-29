@@ -4,20 +4,20 @@ export class StreamDto {
   @IsNumber()
   id: number;
 
-  @IsNumber()
-  inletTemp: number;
+  @IsString()
+  inletTemp: string;
 
-  @IsNumber()
-  outletTemp: number;
+  @IsString()
+  outletTemp: string;
 
-  @IsNumber()
-  massFlow: number;
+  @IsString()
+  massFlow: string;
 
-  @IsNumber()
-  heatCapacity: number;
+  @IsString()
+  heatCapacity: string;
 
-  @IsNumber()
-  flowHeatCapacity: number;
+  @IsString()
+  flowHeatCapacity: string;
 
   @IsString()
   streamType: string;

@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { StreamDataDto } from "src/dto/stream-data.dto";
+import { StreamDto } from "src/dto/stream.dto";
 import { IIntervals } from "src/interfaces/intervals.interface";
 import { IRelativePinchStream } from "src/interfaces/relative-pinch-stream.interface";
 import { IStreamData } from "src/interfaces/stream-data.interface";
@@ -7,7 +8,20 @@ import { IStreamData } from "src/interfaces/stream-data.interface";
 @Injectable()
 export class StreamProcessingUtility {
   streamTypeDefiner(streamsData: StreamDataDto): IStreamData[] {
-    const streams = streamsData.streams;
+    const streams: IStreamData[] = [];
+    const str = streamsData.streams;
+    for (let elem of str) {
+      streams.push({
+        id: elem.id,
+        inletTemp: parseFloat(elem.inletTemp),
+        outletTemp: parseFloat(elem.outletTemp),
+        massFlow: parseFloat(elem.massFlow),
+        heatCapacity: parseFloat(elem.heatCapacity),
+        flowHeatCapacity: parseFloat(elem.flowHeatCapacity),
+        streamType: elem.streamType,
+        deltaT: elem.deltaT,
+      });
+    }
     for (let stream of streams) {
       stream.inletTemp > stream.outletTemp
         ? (stream.streamType = "hot")
@@ -19,7 +33,7 @@ export class StreamProcessingUtility {
   }
 
   shiftedStreamMaker(streams: IStreamData[]): IStreamData[] {
-    const shiftedStreams = [];
+    const shiftedStreams: IStreamData[] = [];
     // Если просто спред оператором приравнять списки shiftedStreams и streams, то они начинают по всему
     // проекту приравниваться. Прототипы и всякое такое
     for (let stream of streams) {
@@ -76,6 +90,8 @@ export class StreamProcessingUtility {
         heatCapDivision: 0,
         deltaH: 0,
         heatStatus: "",
+        incomingHeatV1: 0,
+        outgoingHeatV1: 0,
         incomingHeat: 0,
         outgoingHeat: 0,
       });
@@ -89,7 +105,7 @@ export class StreamProcessingUtility {
     hotPinchPoint: number,
     coldPinchPoint: number,
   ): IRelativePinchStream[] {
-    const relativPinchStreams: IRelativePinchStream[] = [];
+    let relativPinchStreams: IRelativePinchStream[] = [];
     for (let stream of streams) {
       if (stream.streamType === "hot" && stream.outletTemp <= hotPinchPoint) {
         relativPinchStreams.push({
@@ -158,10 +174,19 @@ export class StreamProcessingUtility {
       }
     }
 
+    relativPinchStreams = relativPinchStreams.filter(
+      (stream) => stream.inletTemp !== stream.outletTemp,
+    );
+
     return relativPinchStreams;
   }
 
-  streamSpliting(relativePinchStreams: IRelativePinchStream[]) {
+  streamSpliting(relativePinchStreams: IRelativePinchStream[]): {
+    hotStreamsTop: IRelativePinchStream[];
+    coldStreamsTop: IRelativePinchStream[];
+    hotStreamsBot: IRelativePinchStream[];
+    coldStreamsBot: IRelativePinchStream[];
+  } {
     const coldStreamsAbove: IRelativePinchStream[] = [];
     const coldStreamsBelow: IRelativePinchStream[] = [];
     const hotStreamsAbove: IRelativePinchStream[] = [];
@@ -183,6 +208,8 @@ export class StreamProcessingUtility {
       }
     });
 
+    console.log(relativePinchStreams);
+
     // Выше Пинча
     if (hotStreamsAbove.length < coldStreamsAbove.length) {
       hotStreamsTop = this.streamSortingByCp(hotStreamsAbove);
@@ -203,7 +230,7 @@ export class StreamProcessingUtility {
       let iterator = 0;
       hotStreamsTop = this.streamSortingByCp(hotStreamsAbove);
       coldStreamsTop = this.streamSortingByCp(coldStreamsAbove);
-      while (hotStreamsAbove.length >= coldStreamsAbove.length) {
+      while (hotStreamsTop.length >= coldStreamsTop.length) {
         let { streamOne, streamTwo } = this.streamSplitter(coldStreamsTop[iterator]);
         let index = coldStreamsTop.indexOf(coldStreamsTop[iterator]);
         coldStreamsTop = coldStreamsTop.filter((stream) => stream !== coldStreamsTop[index]);
@@ -213,6 +240,44 @@ export class StreamProcessingUtility {
         iterator++;
       }
     }
+
+    // Ниже Пинча
+    if (hotStreamsBelow.length >= coldStreamsBelow.length) {
+      hotStreamsBot = this.streamSortingByCp(hotStreamsBelow);
+      coldStreamsBot = this.streamSortingByCp(coldStreamsBelow);
+
+      let iterator = 0;
+      while (
+        hotStreamsBot[iterator].flowHeatCapacity <= coldStreamsBot[iterator].flowHeatCapacity
+      ) {
+        let { streamOne, streamTwo } = this.streamSplitter(coldStreamsBot[iterator]);
+        let index = coldStreamsBot.indexOf(coldStreamsBot[iterator]);
+        coldStreamsBot = coldStreamsBot.filter((stream) => stream !== coldStreamsBot[index]);
+        coldStreamsBot.push(streamOne);
+        coldStreamsBot.push(streamTwo);
+        coldStreamsBot = this.streamSortingByCp(coldStreamsBot);
+
+        iterator++;
+      }
+    } else {
+      let iterator = 0;
+
+      hotStreamsBot = this.streamSortingByCp(hotStreamsBelow);
+      coldStreamsBot = this.streamSortingByCp(coldStreamsBelow);
+
+      while (hotStreamsBot.length >= coldStreamsBot.length) {
+        let { streamOne, streamTwo } = this.streamSplitter(hotStreamsBot[iterator]);
+        let index = hotStreamsBot.indexOf(hotStreamsBot[iterator]);
+        hotStreamsBot = hotStreamsBot.filter((stream) => stream !== hotStreamsBot[index]);
+        hotStreamsBot.push(streamOne);
+        hotStreamsBot.push(streamTwo);
+        hotStreamsBot = this.streamSortingByCp(hotStreamsBot);
+
+        iterator++;
+      }
+    }
+
+    return { hotStreamsTop, coldStreamsTop, hotStreamsBot, coldStreamsBot };
   }
 
   streamSplitter(stream: IRelativePinchStream): {
