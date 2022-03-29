@@ -119,5 +119,19 @@ export class AppService {
     );
     const { hotStreamsTop, coldStreamsTop, hotStreamsBot, coldStreamsBot } =
       this.streamProcUtility.streamSpliting(streamRelPinch);
+
+    // Не всегда количество потоков будет четным. Нужно определить наименьшее количество потоков
+    // соответственно столько итераций и будет сделанно
+    const arrLength = this.streamProcUtility.numberOfIteration(hotStreamsTop, coldStreamsTop);
+    for (let i = 0; i < arrLength; i++) {
+      if (hotStreamsTop[i].flowHeatCapacity <= coldStreamsTop[i].flowHeatCapacity) {
+        let deltaHhot =
+          hotStreamsTop[i].flowHeatCapacity * (hotPinchPoint - hotStreamsTop[i].inletTemp);
+        let deltaHcold =
+          coldStreamsTop[i].flowHeatCapacity * (coldStreamsTop[i].outletTemp - coldPinchPoint);
+        console.log(deltaHhot);
+        console.log(deltaHcold);
+      }
+    }
   }
 }

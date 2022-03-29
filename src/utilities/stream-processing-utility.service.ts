@@ -208,10 +208,8 @@ export class StreamProcessingUtility {
       }
     });
 
-    console.log(relativePinchStreams);
-
     // Выше Пинча
-    if (hotStreamsAbove.length < coldStreamsAbove.length) {
+    if (hotStreamsAbove.length >= coldStreamsAbove.length) {
       hotStreamsTop = this.streamSortingByCp(hotStreamsAbove);
       coldStreamsTop = this.streamSortingByCp(coldStreamsAbove);
 
@@ -320,5 +318,15 @@ export class StreamProcessingUtility {
       }
     }
     return streams;
+  }
+
+  numberOfIteration(arr1: IRelativePinchStream[], arr2: IRelativePinchStream[]): number {
+    if (arr1.length > arr2.length) {
+      return arr2.length;
+    } else if (arr1.length === arr2.length) {
+      return arr1.length;
+    } else {
+      return arr1.length;
+    }
   }
 }
