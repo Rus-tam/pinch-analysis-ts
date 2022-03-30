@@ -111,6 +111,10 @@ export class AppService {
   }
 
   exchangerSetup(streams: IStreamData[]) {
+    let deltaHhot = 0;
+    let deltaHcold = 0;
+    const heatExchAbove = [];
+
     const { hotPinchPoint, coldPinchPoint } = this.pinchPointFinder(streams);
     const streamRelPinch = this.streamProcUtility.streamsRelativlyPinch(
       streams,
@@ -122,6 +126,7 @@ export class AppService {
 
     // Не всегда количество потоков будет четным. Нужно определить наименьшее количество потоков
     // соответственно столько итераций и будет сделанно
+    // Выше пинча
     const arrLength = this.streamProcUtility.numberOfIteration(hotStreamsTop, coldStreamsTop);
     for (let i = 0; i < arrLength; i++) {
       if (hotStreamsTop[i].flowHeatCapacity <= coldStreamsTop[i].flowHeatCapacity) {
@@ -129,9 +134,46 @@ export class AppService {
           hotStreamsTop[i].flowHeatCapacity * (hotPinchPoint - hotStreamsTop[i].inletTemp);
         let deltaHcold =
           coldStreamsTop[i].flowHeatCapacity * (coldStreamsTop[i].outletTemp - coldPinchPoint);
-        console.log(deltaHhot);
-        console.log(deltaHcold);
+        if (Math.abs(deltaHhot) > Math.abs(deltaHcold)) {
+          heatExchAbove.push({
+            hotStreamId: hotStreamsTop[i].parentId,
+            coldStreamId: coldStreamsTop[i].parentId,
+            deltaH: Math.abs(deltaHcold),
+            inletTempHot:
+              hotStreamsTop[i].outletTemp +
+              Math.abs(deltaHcold) / hotStreamsTop[i].flowHeatCapacity,
+            outletTempHot: hotStreamsTop[i].outletTemp,
+            inletTempCold: coldStreamsTop[i].inletTemp,
+            outletTempCold:
+              coldStreamsTop[i].inletTemp +
+              Math.abs(deltaHcold) / coldStreamsTop[i].flowHeatCapacity,
+          });
+          hotStreamsTop[i].outletTemp =
+            hotStreamsTop[i].outletTemp + Math.abs(deltaHcold) / hotStreamsTop[i].flowHeatCapacity;
+          coldStreamsTop[i].inletTemp =
+            coldStreamsTop[i].inletTemp + Math.abs(deltaHcold) / coldStreamsTop[i].flowHeatCapacity;
+        } else {
+          heatExchAbove.push({
+            hotStreamId: hotStreamsTop[i].parentId,
+            coldStreamId: coldStreamsTop[i].parentId,
+            deltaH: Math.abs(deltaHhot),
+            inletTempHot:
+              hotStreamsTop[i].outletTemp + Math.abs(deltaHhot) / hotStreamsTop[i].flowHeatCapacity,
+            outletTempHot: hotStreamsTop[i].outletTemp,
+            inletTempCold: coldStreamsTop[i].inletTemp,
+            outletTempCold:
+              coldStreamsTop[i].inletTemp +
+              Math.abs(deltaHhot) / coldStreamsTop[i].flowHeatCapacity,
+          });
+          hotStreamsTop[i].outletTemp =
+            hotStreamsTop[i].outletTemp + Math.abs(deltaHhot) / hotStreamsTop[i].flowHeatCapacity;
+          coldStreamsTop[i].inletTemp =
+            coldStreamsTop[i].inletTemp + Math.abs(deltaHhot) / coldStreamsTop[i].flowHeatCapacity;
+        }
+      } else {
+        continue;
       }
     }
+    console.log(heatExchAbove);
   }
 }
