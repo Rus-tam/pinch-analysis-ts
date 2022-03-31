@@ -23,9 +23,7 @@ export class StreamProcessingUtility {
       });
     }
     for (let stream of streams) {
-      stream.inletTemp > stream.outletTemp
-        ? (stream.streamType = "hot")
-        : (stream.streamType = "cold");
+      stream.inletTemp > stream.outletTemp ? (stream.streamType = "hot") : (stream.streamType = "cold");
       stream.flowHeatCapacity = stream.heatCapacity * stream.massFlow;
     }
 
@@ -100,11 +98,7 @@ export class StreamProcessingUtility {
     return intervals;
   }
 
-  streamsRelativlyPinch(
-    streams: IStreamData[],
-    hotPinchPoint: number,
-    coldPinchPoint: number,
-  ): IRelativePinchStream[] {
+  streamsRelativlyPinch(streams: IStreamData[], hotPinchPoint: number, coldPinchPoint: number): IRelativePinchStream[] {
     let relativPinchStreams: IRelativePinchStream[] = [];
     for (let stream of streams) {
       if (stream.streamType === "hot" && stream.outletTemp <= hotPinchPoint) {
@@ -174,9 +168,7 @@ export class StreamProcessingUtility {
       }
     }
 
-    relativPinchStreams = relativPinchStreams.filter(
-      (stream) => stream.inletTemp !== stream.outletTemp,
-    );
+    relativPinchStreams = relativPinchStreams.filter((stream) => stream.inletTemp !== stream.outletTemp);
 
     return relativPinchStreams;
   }
@@ -245,9 +237,7 @@ export class StreamProcessingUtility {
       coldStreamsBot = this.streamSortingByCp(coldStreamsBelow);
 
       let iterator = 0;
-      while (
-        hotStreamsBot[iterator].flowHeatCapacity <= coldStreamsBot[iterator].flowHeatCapacity
-      ) {
+      while (hotStreamsBot[iterator].flowHeatCapacity <= coldStreamsBot[iterator].flowHeatCapacity) {
         let { streamOne, streamTwo } = this.streamSplitter(coldStreamsBot[iterator]);
         let index = coldStreamsBot.indexOf(coldStreamsBot[iterator]);
         coldStreamsBot = coldStreamsBot.filter((stream) => stream !== coldStreamsBot[index]);
@@ -275,7 +265,20 @@ export class StreamProcessingUtility {
       }
     }
 
+    hotStreamsTop = this.streamHeatPotential(hotStreamsTop);
+    coldStreamsTop = this.streamHeatPotential(coldStreamsTop);
+    hotStreamsBot = this.streamHeatPotential(hotStreamsBot);
+    coldStreamsBot = this.streamHeatPotential(coldStreamsBot);
+
     return { hotStreamsTop, coldStreamsTop, hotStreamsBot, coldStreamsBot };
+  }
+
+  streamHeatPotential(streams: IRelativePinchStream[]): IRelativePinchStream[] {
+    for (let stream of streams) {
+      stream.potentialHeat = Math.abs(stream.flowHeatCapacity * (stream.inletTemp - stream.outletTemp));
+    }
+
+    return streams;
   }
 
   streamSplitter(stream: IRelativePinchStream): {
@@ -320,13 +323,48 @@ export class StreamProcessingUtility {
     return streams;
   }
 
-  numberOfIteration(arr1: IRelativePinchStream[], arr2: IRelativePinchStream[]): number {
-    if (arr1.length > arr2.length) {
-      return arr2.length;
-    } else if (arr1.length === arr2.length) {
-      return arr1.length;
-    } else {
-      return arr1.length;
+  maxCpPar(hotStreams: IRelativePinchStream[], coldStreams: IRelativePinchStream[]) {
+    let hotStream: IRelativePinchStream = {
+      parentId: 0,
+      inletTemp: 0,
+      outletTemp: 0,
+      massFlow: 0,
+      heatCapacity: 0,
+      flowHeatCapacity: 0,
+      streamType: "",
+      relativePinch: "",
+    };
+    let coldStream: IRelativePinchStream = {
+      parentId: 0,
+      inletTemp: 0,
+      outletTemp: 0,
+      massFlow: 0,
+      heatCapacity: 0,
+      flowHeatCapacity: 0,
+      streamType: "",
+      relativePinch: "",
+    };
+
+    for (let i = 0; i < hotStreams.length; i++) {
+      hotStream.flowHeatCapacity < hotStreams[i].flowHeatCapacity ? (hotStream = hotStreams[i]) : null;
+    }
+
+    for (let i = 0; i < coldStreams.length; i++) {
+      coldStream.flowHeatCapacity < coldStreams[i].flowHeatCapacity ? (coldStream = coldStreams[i]) : null;
+    }
+
+    return { hotStream, coldStream };
+  }
+
+  searchPotential(hotStreams: IRelativePinchStream[], coldStreams: IRelativePinchStream[]): boolean {
+    for (let i = 0; i < hotStreams.length; i++) {
+      for (let j = 0; j < coldStreams.length; j++) {
+        if (hotStreams[i].flowHeatCapacity <= coldStreams[j].flowHeatCapacity) {
+          return true;
+        } else {
+          return false;
+        }
+      }
     }
   }
 }

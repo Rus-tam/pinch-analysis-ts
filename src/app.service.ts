@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { ConstraintMetadata } from "class-validator/types/metadata/ConstraintMetadata";
 import { StreamDto } from "./dto/stream.dto";
 import { IStreamData } from "./interfaces/stream-data.interface";
 import { StreamProcessingUtility } from "./utilities/stream-processing-utility.service";
@@ -49,10 +50,7 @@ export class AppService {
 
     for (let i = 0; i < intervals.length; i++) {
       for (let j = 0; j < modifiedStreams.length; j++) {
-        if (
-          intervals[i].start > modifiedStreams[j].inletTemp &&
-          intervals[i].end < modifiedStreams[j].outletTemp
-        ) {
+        if (intervals[i].start > modifiedStreams[j].inletTemp && intervals[i].end < modifiedStreams[j].outletTemp) {
           streamId.push(modifiedStreams[j].id);
           if (modifiedStreams[j].streamType === "hot") {
             hotFlowHeatCap += modifiedStreams[j].flowHeatCapacity;
@@ -64,21 +62,15 @@ export class AppService {
       intervals[i].streamId = streamId;
       intervals[i].heatCapDivision = coldFlowHeatCap - hotFlowHeatCap;
       intervals[i].deltaH = intervals[i].deltaT * intervals[i].heatCapDivision;
-      intervals[i].deltaH < 0
-        ? (intervals[i].heatStatus = "heatExcess")
-        : (intervals[i].heatStatus = "heatLack");
+      intervals[i].deltaH < 0 ? (intervals[i].heatStatus = "heatExcess") : (intervals[i].heatStatus = "heatLack");
       if (i === 0) {
         intervals[i].incomingHeatV1 = 0;
         intervals[i].outgoingHeatV1 = intervals[i].incomingHeatV1 - intervals[i].deltaH;
-        intervals[i].incomingHeatV1 < 0 && intervals[i].outgoingHeatV1 < 0
-          ? (isNegativeValue = true)
-          : null;
+        intervals[i].incomingHeatV1 < 0 && intervals[i].outgoingHeatV1 < 0 ? (isNegativeValue = true) : null;
       } else {
         intervals[i].incomingHeatV1 = intervals[i - 1].outgoingHeatV1;
         intervals[i].outgoingHeatV1 = intervals[i].incomingHeatV1 - intervals[i].deltaH;
-        intervals[i].incomingHeatV1 < 0 && intervals[i].outgoingHeatV1 < 0
-          ? (isNegativeValue = true)
-          : null;
+        intervals[i].incomingHeatV1 < 0 && intervals[i].outgoingHeatV1 < 0 ? (isNegativeValue = true) : null;
       }
       minValue > intervals[i].outgoingHeatV1 ? (minValue = intervals[i].outgoingHeatV1) : null;
       streamId = [];
@@ -113,67 +105,115 @@ export class AppService {
   exchangerSetup(streams: IStreamData[]) {
     let deltaHhot = 0;
     let deltaHcold = 0;
+    let deltaHres = 0;
     const heatExchAbove = [];
 
     const { hotPinchPoint, coldPinchPoint } = this.pinchPointFinder(streams);
-    const streamRelPinch = this.streamProcUtility.streamsRelativlyPinch(
-      streams,
-      hotPinchPoint,
-      coldPinchPoint,
-    );
-    const { hotStreamsTop, coldStreamsTop, hotStreamsBot, coldStreamsBot } =
-      this.streamProcUtility.streamSpliting(streamRelPinch);
+    const streamRelPinch = this.streamProcUtility.streamsRelativlyPinch(streams, hotPinchPoint, coldPinchPoint);
+    let { hotStreamsTop, coldStreamsTop, hotStreamsBot, coldStreamsBot } = this.streamProcUtility.streamSpliting(streamRelPinch);
 
-    // Не всегда количество потоков будет четным. Нужно определить наименьшее количество потоков
-    // соответственно столько итераций и будет сделанно
-    // Выше пинча
-    const arrLength = this.streamProcUtility.numberOfIteration(hotStreamsTop, coldStreamsTop);
-    for (let i = 0; i < arrLength; i++) {
-      if (hotStreamsTop[i].flowHeatCapacity <= coldStreamsTop[i].flowHeatCapacity) {
-        let deltaHhot =
-          hotStreamsTop[i].flowHeatCapacity * (hotPinchPoint - hotStreamsTop[i].inletTemp);
-        let deltaHcold =
-          coldStreamsTop[i].flowHeatCapacity * (coldStreamsTop[i].outletTemp - coldPinchPoint);
-        if (Math.abs(deltaHhot) > Math.abs(deltaHcold)) {
-          heatExchAbove.push({
-            hotStreamId: hotStreamsTop[i].parentId,
-            coldStreamId: coldStreamsTop[i].parentId,
-            deltaH: Math.abs(deltaHcold),
-            inletTempHot:
-              hotStreamsTop[i].outletTemp +
-              Math.abs(deltaHcold) / hotStreamsTop[i].flowHeatCapacity,
-            outletTempHot: hotStreamsTop[i].outletTemp,
-            inletTempCold: coldStreamsTop[i].inletTemp,
-            outletTempCold:
-              coldStreamsTop[i].inletTemp +
-              Math.abs(deltaHcold) / coldStreamsTop[i].flowHeatCapacity,
-          });
-          hotStreamsTop[i].outletTemp =
-            hotStreamsTop[i].outletTemp + Math.abs(deltaHcold) / hotStreamsTop[i].flowHeatCapacity;
-          coldStreamsTop[i].inletTemp =
-            coldStreamsTop[i].inletTemp + Math.abs(deltaHcold) / coldStreamsTop[i].flowHeatCapacity;
+    let searcPotential = this.streamProcUtility.searchPotential(hotStreamsTop, coldStreamsTop);
+
+    while (hotStreamsTop.length !== 0) {
+      let { hotStream, coldStream } = this.streamProcUtility.maxCpPar(hotStreamsTop, coldStreamsTop);
+      let hotIndex = hotStreamsTop.indexOf(hotStream);
+      let coldIndex = coldStreamsTop.indexOf(coldStream);
+
+      if (hotStream.flowHeatCapacity <= coldStream.flowHeatCapacity) {
+        deltaHhot = hotStream.flowHeatCapacity * (hotStream.outletTemp - hotStream.inletTemp);
+        deltaHcold = coldStream.flowHeatCapacity * (coldStream.outletTemp - coldStream.inletTemp);
+
+        if (Math.abs(deltaHhot) >= Math.abs(deltaHcold)) {
+          deltaHres = Math.abs(deltaHcold);
         } else {
-          heatExchAbove.push({
-            hotStreamId: hotStreamsTop[i].parentId,
-            coldStreamId: coldStreamsTop[i].parentId,
-            deltaH: Math.abs(deltaHhot),
-            inletTempHot:
-              hotStreamsTop[i].outletTemp + Math.abs(deltaHhot) / hotStreamsTop[i].flowHeatCapacity,
-            outletTempHot: hotStreamsTop[i].outletTemp,
-            inletTempCold: coldStreamsTop[i].inletTemp,
-            outletTempCold:
-              coldStreamsTop[i].inletTemp +
-              Math.abs(deltaHhot) / coldStreamsTop[i].flowHeatCapacity,
-          });
-          hotStreamsTop[i].outletTemp =
-            hotStreamsTop[i].outletTemp + Math.abs(deltaHhot) / hotStreamsTop[i].flowHeatCapacity;
-          coldStreamsTop[i].inletTemp =
-            coldStreamsTop[i].inletTemp + Math.abs(deltaHhot) / coldStreamsTop[i].flowHeatCapacity;
+          deltaHres = Math.abs(deltaHhot);
         }
-      } else {
-        continue;
+        // console.log(hotStream);
+        // console.log(coldStream);
+        // console.log(Math.abs(deltaHhot));
+        // console.log(Math.abs(deltaHcold));
+        // console.log(deltaHres);
+        // console.log("______________________");
+
+        heatExchAbove.push({
+          hotStreamId: hotStream.parentId,
+          coldStreamId: coldStream.parentId,
+          deltaH: deltaHres,
+          inletTempHot: hotStream.outletTemp + deltaHres / hotStream.flowHeatCapacity,
+          outletTempHot: hotStream.outletTemp,
+          inletTempCold: coldStream.inletTemp,
+          outletTempCold: coldStream.inletTemp + deltaHres / coldStream.flowHeatCapacity,
+        });
+        hotStreamsTop[hotIndex].outletTemp = hotStream.outletTemp + deltaHres / hotStream.flowHeatCapacity;
+        hotStreamsTop[hotIndex].potentialHeat = hotStreamsTop[hotIndex].potentialHeat - deltaHres;
+        coldStreamsTop[coldIndex].inletTemp = coldStream.inletTemp + deltaHres / coldStream.flowHeatCapacity;
+        coldStreamsTop[coldIndex].potentialHeat = coldStreamsTop[coldIndex].potentialHeat - deltaHres;
+
+        // console.log(hotStreamsTop[hotIndex]);
+        // console.log(coldStreamsTop[coldIndex]);
+        // console.log("________________________");
+
+        hotStreamsTop = hotStreamsTop.filter((stream) => stream.potentialHeat > 0);
+        coldStreamsTop = coldStreamsTop.filter((stream) => stream.potentialHeat > 0);
       }
     }
+
     console.log(heatExchAbove);
+    console.log("_________________");
+    console.log(hotStreamsTop);
+    console.log(coldStreamsTop);
+
+    // while (searcPotential) {
+    //   for (let i = 0; i < arrLength; i++) {
+    //     try {
+    //       if (hotStreamsTop[i].flowHeatCapacity <= coldStreamsTop[i].flowHeatCapacity) {
+    //         let deltaHhot = hotStreamsTop[i].flowHeatCapacity * (hotPinchPoint - hotStreamsTop[i].inletTemp);
+    //         let deltaHcold = coldStreamsTop[i].flowHeatCapacity * (coldStreamsTop[i].outletTemp - coldPinchPoint);
+    //         if (Math.abs(deltaHhot) > Math.abs(deltaHcold)) {
+    //           heatExchAbove.push({
+    //             hotStreamId: hotStreamsTop[i].parentId,
+    //             coldStreamId: coldStreamsTop[i].parentId,
+    //             deltaH: Math.abs(deltaHcold),
+    //             inletTempHot: hotStreamsTop[i].outletTemp + Math.abs(deltaHcold) / hotStreamsTop[i].flowHeatCapacity,
+    //             outletTempHot: hotStreamsTop[i].outletTemp,
+    //             inletTempCold: coldStreamsTop[i].inletTemp,
+    //             outletTempCold: coldStreamsTop[i].inletTemp + Math.abs(deltaHcold) / coldStreamsTop[i].flowHeatCapacity,
+    //           });
+    //           hotStreamsTop[i].outletTemp =
+    //             hotStreamsTop[i].outletTemp + Math.abs(deltaHcold) / hotStreamsTop[i].flowHeatCapacity;
+    //           coldStreamsTop[i].inletTemp =
+    //             coldStreamsTop[i].inletTemp + Math.abs(deltaHcold) / coldStreamsTop[i].flowHeatCapacity;
+    //         } else {
+    //           heatExchAbove.push({
+    //             hotStreamId: hotStreamsTop[i].parentId,
+    //             coldStreamId: coldStreamsTop[i].parentId,
+    //             deltaH: Math.abs(deltaHhot),
+    //             inletTempHot: hotStreamsTop[i].outletTemp + Math.abs(deltaHhot) / hotStreamsTop[i].flowHeatCapacity,
+    //             outletTempHot: hotStreamsTop[i].outletTemp,
+    //             inletTempCold: coldStreamsTop[i].inletTemp,
+    //             outletTempCold: coldStreamsTop[i].inletTemp + Math.abs(deltaHhot) / coldStreamsTop[i].flowHeatCapacity,
+    //           });
+    //           hotStreamsTop[i].outletTemp = hotStreamsTop[i].outletTemp + Math.abs(deltaHhot) / hotStreamsTop[i].flowHeatCapacity;
+    //           coldStreamsTop[i].inletTemp =
+    //             coldStreamsTop[i].inletTemp + Math.abs(deltaHhot) / coldStreamsTop[i].flowHeatCapacity;
+
+    //           console.log(hotStreamsTop[i]);
+    //           console.log(coldStreamsTop[i]);
+
+    //           // Проверка есть ли потоки у которых входящая температура равна выходящей
+    //           hotStreamsTop = hotStreamsTop.filter((stream) => stream.inletTemp !== stream.outletTemp);
+    //           coldStreamsTop = coldStreamsTop.filter((stream) => stream.inletTemp !== stream.outletTemp);
+    //         }
+    //       }
+    //     } catch (e) {
+    //       null;
+    //     }
+    //   }
+    //   // console.log(searcPotential);
+    //   searcPotential = this.streamProcUtility.searchPotential(hotStreamsTop, coldStreamsTop);
+    //   // console.log(searcPotential);
+    // }
+
+    // console.log(heatExchAbove);
   }
 }

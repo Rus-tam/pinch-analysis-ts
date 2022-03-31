@@ -7,4 +7,5 @@ export interface IRelativePinchStream {
   flowHeatCapacity: number;
   streamType: string;
   relativePinch: string;
+  potentialHeat?: number;
 }
