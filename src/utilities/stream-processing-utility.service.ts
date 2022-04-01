@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { StreamDataDto } from "src/dto/stream-data.dto";
 import { StreamDto } from "src/dto/stream.dto";
+import { IHeatExchanger } from "src/interfaces/heat-exchanger.interface";
 import { IIntervals } from "src/interfaces/intervals.interface";
 import { IRelativePinchStream } from "src/interfaces/relative-pinch-stream.interface";
 import { IStreamData } from "src/interfaces/stream-data.interface";
@@ -174,19 +175,19 @@ export class StreamProcessingUtility {
   }
 
   streamSpliting(relativePinchStreams: IRelativePinchStream[]): {
-    hotStreamsTop: IRelativePinchStream[];
-    coldStreamsTop: IRelativePinchStream[];
-    hotStreamsBot: IRelativePinchStream[];
-    coldStreamsBot: IRelativePinchStream[];
+    hotStreamsTopSplited: IRelativePinchStream[];
+    coldStreamsTopSplited: IRelativePinchStream[];
+    hotStreamsBotSplited: IRelativePinchStream[];
+    coldStreamsBotSplited: IRelativePinchStream[];
   } {
     const coldStreamsAbove: IRelativePinchStream[] = [];
     const coldStreamsBelow: IRelativePinchStream[] = [];
     const hotStreamsAbove: IRelativePinchStream[] = [];
     const hotStreamsBelow: IRelativePinchStream[] = [];
-    let coldStreamsTop: IRelativePinchStream[] = [];
-    let hotStreamsTop: IRelativePinchStream[] = [];
-    let coldStreamsBot: IRelativePinchStream[] = [];
-    let hotStreamsBot: IRelativePinchStream[] = [];
+    let coldStreamsTopSplited: IRelativePinchStream[] = [];
+    let hotStreamsTopSplited: IRelativePinchStream[] = [];
+    let coldStreamsBotSplited: IRelativePinchStream[] = [];
+    let hotStreamsBotSplited: IRelativePinchStream[] = [];
 
     relativePinchStreams.forEach((stream) => {
       if (stream.relativePinch === "above" && stream.streamType === "cold") {
@@ -202,75 +203,75 @@ export class StreamProcessingUtility {
 
     // Выше Пинча
     if (hotStreamsAbove.length >= coldStreamsAbove.length) {
-      hotStreamsTop = this.streamSortingByCp(hotStreamsAbove);
-      coldStreamsTop = this.streamSortingByCp(coldStreamsAbove);
+      hotStreamsTopSplited = this.streamSortingByCp(hotStreamsAbove);
+      coldStreamsTopSplited = this.streamSortingByCp(coldStreamsAbove);
 
       let iterator = 0;
-      while (hotStreamsTop[iterator].flowHeatCapacity > coldStreamsTop[iterator].flowHeatCapacity) {
-        let { streamOne, streamTwo } = this.streamSplitter(hotStreamsTop[iterator]);
-        let index = hotStreamsTop.indexOf(hotStreamsTop[iterator]);
-        hotStreamsTop = hotStreamsTop.filter((stream) => stream !== hotStreamsTop[index]);
-        hotStreamsTop.push(streamOne);
-        hotStreamsTop.push(streamTwo);
-        hotStreamsTop = this.streamSortingByCp(hotStreamsTop);
+      while (hotStreamsTopSplited[iterator].flowHeatCapacity > coldStreamsTopSplited[iterator].flowHeatCapacity) {
+        let { streamOne, streamTwo } = this.streamSplitter(hotStreamsTopSplited[iterator]);
+        let index = hotStreamsTopSplited.indexOf(hotStreamsTopSplited[iterator]);
+        hotStreamsTopSplited = hotStreamsTopSplited.filter((stream) => stream !== hotStreamsTopSplited[index]);
+        hotStreamsTopSplited.push(streamOne);
+        hotStreamsTopSplited.push(streamTwo);
+        hotStreamsTopSplited = this.streamSortingByCp(hotStreamsTopSplited);
 
         iterator++;
       }
     } else {
       let iterator = 0;
-      hotStreamsTop = this.streamSortingByCp(hotStreamsAbove);
-      coldStreamsTop = this.streamSortingByCp(coldStreamsAbove);
-      while (hotStreamsTop.length >= coldStreamsTop.length) {
-        let { streamOne, streamTwo } = this.streamSplitter(coldStreamsTop[iterator]);
-        let index = coldStreamsTop.indexOf(coldStreamsTop[iterator]);
-        coldStreamsTop = coldStreamsTop.filter((stream) => stream !== coldStreamsTop[index]);
-        coldStreamsTop.push(streamOne);
-        coldStreamsTop.push(streamTwo);
-        coldStreamsTop = this.streamSortingByCp(coldStreamsTop);
+      hotStreamsTopSplited = this.streamSortingByCp(hotStreamsAbove);
+      coldStreamsTopSplited = this.streamSortingByCp(coldStreamsAbove);
+      while (hotStreamsTopSplited.length >= coldStreamsTopSplited.length) {
+        let { streamOne, streamTwo } = this.streamSplitter(coldStreamsTopSplited[iterator]);
+        let index = coldStreamsTopSplited.indexOf(coldStreamsTopSplited[iterator]);
+        coldStreamsTopSplited = coldStreamsTopSplited.filter((stream) => stream !== coldStreamsTopSplited[index]);
+        coldStreamsTopSplited.push(streamOne);
+        coldStreamsTopSplited.push(streamTwo);
+        coldStreamsTopSplited = this.streamSortingByCp(coldStreamsTopSplited);
         iterator++;
       }
     }
 
     // Ниже Пинча
     if (hotStreamsBelow.length >= coldStreamsBelow.length) {
-      hotStreamsBot = this.streamSortingByCp(hotStreamsBelow);
-      coldStreamsBot = this.streamSortingByCp(coldStreamsBelow);
+      hotStreamsBotSplited = this.streamSortingByCp(hotStreamsBelow);
+      coldStreamsBotSplited = this.streamSortingByCp(coldStreamsBelow);
 
       let iterator = 0;
-      while (hotStreamsBot[iterator].flowHeatCapacity <= coldStreamsBot[iterator].flowHeatCapacity) {
-        let { streamOne, streamTwo } = this.streamSplitter(coldStreamsBot[iterator]);
-        let index = coldStreamsBot.indexOf(coldStreamsBot[iterator]);
-        coldStreamsBot = coldStreamsBot.filter((stream) => stream !== coldStreamsBot[index]);
-        coldStreamsBot.push(streamOne);
-        coldStreamsBot.push(streamTwo);
-        coldStreamsBot = this.streamSortingByCp(coldStreamsBot);
+      while (hotStreamsBotSplited[iterator].flowHeatCapacity <= coldStreamsBotSplited[iterator].flowHeatCapacity) {
+        let { streamOne, streamTwo } = this.streamSplitter(coldStreamsBotSplited[iterator]);
+        let index = coldStreamsBotSplited.indexOf(coldStreamsBotSplited[iterator]);
+        coldStreamsBotSplited = coldStreamsBotSplited.filter((stream) => stream !== coldStreamsBotSplited[index]);
+        coldStreamsBotSplited.push(streamOne);
+        coldStreamsBotSplited.push(streamTwo);
+        coldStreamsBotSplited = this.streamSortingByCp(coldStreamsBotSplited);
 
         iterator++;
       }
     } else {
       let iterator = 0;
 
-      hotStreamsBot = this.streamSortingByCp(hotStreamsBelow);
-      coldStreamsBot = this.streamSortingByCp(coldStreamsBelow);
+      hotStreamsBotSplited = this.streamSortingByCp(hotStreamsBelow);
+      coldStreamsBotSplited = this.streamSortingByCp(coldStreamsBelow);
 
-      while (hotStreamsBot.length >= coldStreamsBot.length) {
-        let { streamOne, streamTwo } = this.streamSplitter(hotStreamsBot[iterator]);
-        let index = hotStreamsBot.indexOf(hotStreamsBot[iterator]);
-        hotStreamsBot = hotStreamsBot.filter((stream) => stream !== hotStreamsBot[index]);
-        hotStreamsBot.push(streamOne);
-        hotStreamsBot.push(streamTwo);
-        hotStreamsBot = this.streamSortingByCp(hotStreamsBot);
+      while (hotStreamsBotSplited.length >= coldStreamsBotSplited.length) {
+        let { streamOne, streamTwo } = this.streamSplitter(hotStreamsBotSplited[iterator]);
+        let index = hotStreamsBotSplited.indexOf(hotStreamsBotSplited[iterator]);
+        hotStreamsBotSplited = hotStreamsBotSplited.filter((stream) => stream !== hotStreamsBotSplited[index]);
+        hotStreamsBotSplited.push(streamOne);
+        hotStreamsBotSplited.push(streamTwo);
+        hotStreamsBotSplited = this.streamSortingByCp(hotStreamsBotSplited);
 
         iterator++;
       }
     }
 
-    hotStreamsTop = this.streamHeatPotential(hotStreamsTop);
-    coldStreamsTop = this.streamHeatPotential(coldStreamsTop);
-    hotStreamsBot = this.streamHeatPotential(hotStreamsBot);
-    coldStreamsBot = this.streamHeatPotential(coldStreamsBot);
+    hotStreamsTopSplited = this.streamHeatPotential(hotStreamsTopSplited);
+    coldStreamsTopSplited = this.streamHeatPotential(coldStreamsTopSplited);
+    hotStreamsBotSplited = this.streamHeatPotential(hotStreamsBotSplited);
+    coldStreamsBotSplited = this.streamHeatPotential(coldStreamsBotSplited);
 
-    return { hotStreamsTop, coldStreamsTop, hotStreamsBot, coldStreamsBot };
+    return { hotStreamsTopSplited, coldStreamsTopSplited, hotStreamsBotSplited, coldStreamsBotSplited };
   }
 
   streamHeatPotential(streams: IRelativePinchStream[]): IRelativePinchStream[] {
@@ -356,15 +357,101 @@ export class StreamProcessingUtility {
     return { hotStream, coldStream };
   }
 
-  searchPotential(hotStreams: IRelativePinchStream[], coldStreams: IRelativePinchStream[]): boolean {
-    for (let i = 0; i < hotStreams.length; i++) {
-      for (let j = 0; j < coldStreams.length; j++) {
-        if (hotStreams[i].flowHeatCapacity <= coldStreams[j].flowHeatCapacity) {
-          return true;
-        } else {
-          return false;
+  minEntalphy(deltaHhot: number, deltaHcold: number): number {
+    let deltaHres: number = 0;
+    if (Math.abs(deltaHhot) >= Math.abs(deltaHcold)) {
+      deltaHres = Math.abs(deltaHcold);
+    } else {
+      deltaHres = Math.abs(deltaHhot);
+    }
+
+    return deltaHres;
+  }
+
+  pinchNearHESetupBelow(
+    hotStreamsBot: IRelativePinchStream[],
+    coldStreamsBot: IRelativePinchStream[],
+  ): { hotStreamsBot: IRelativePinchStream[]; coldStreamsBot: IRelativePinchStream[]; heatExchBelow: IHeatExchanger[] } {
+    const heatExchBelow: IHeatExchanger[] = [];
+    let deltaHhot = 0;
+    let deltaHcold = 0;
+    let deltaHres = 0;
+    for (let i = 0; i < coldStreamsBot.length; i++) {
+      if (hotStreamsBot[i] !== undefined) {
+        if (hotStreamsBot[i].flowHeatCapacity >= coldStreamsBot[i].flowHeatCapacity) {
+          // Определяем разницу энтальпий
+          deltaHhot = hotStreamsBot[i].flowHeatCapacity * (hotStreamsBot[i].outletTemp - hotStreamsBot[i].inletTemp);
+          deltaHcold = coldStreamsBot[i].flowHeatCapacity * (coldStreamsBot[i].outletTemp - coldStreamsBot[i].inletTemp);
+
+          // Определяем наименьшую энтальпию и с ней работаем
+          deltaHres = this.minEntalphy(deltaHhot, deltaHcold);
+
+          // Ставим теплообменник
+          heatExchBelow.push({
+            hotStreamId: hotStreamsBot[i].parentId,
+            coldStreamId: coldStreamsBot[i].parentId,
+            deltaH: deltaHres,
+            inletTempHot: hotStreamsBot[i].outletTemp + deltaHres / hotStreamsBot[i].flowHeatCapacity,
+            outletTempHot: hotStreamsBot[i].outletTemp,
+            inletTempCold: coldStreamsBot[i].inletTemp,
+            outletTempCold: coldStreamsBot[i].inletTemp + deltaHres / coldStreamsBot[i].flowHeatCapacity,
+          });
+
+          // Изменяем температуры и тепловые потенциалы потоков
+          hotStreamsBot[i].outletTemp = hotStreamsBot[i].outletTemp + deltaHres / hotStreamsBot[i].flowHeatCapacity;
+          hotStreamsBot[i].potentialHeat = hotStreamsBot[i].potentialHeat - deltaHres;
+          coldStreamsBot[i].inletTemp = coldStreamsBot[i].inletTemp + deltaHres / coldStreamsBot[i].flowHeatCapacity;
+          coldStreamsBot[i].potentialHeat = coldStreamsBot[i].potentialHeat - deltaHres;
         }
       }
     }
+
+    console.log(hotStreamsBot);
+    console.log(coldStreamsBot);
+    console.log("____________________");
+    console.log(heatExchBelow);
+
+    return { hotStreamsBot, coldStreamsBot, heatExchBelow };
+  }
+
+  pinchNearHESetupAbove(
+    hotStreamsTop: IRelativePinchStream[],
+    coldStreamsTop: IRelativePinchStream[],
+  ): { hotStreamsTop: IRelativePinchStream[]; coldStreamsTop: IRelativePinchStream[]; heatExchAbove: IHeatExchanger[] } {
+    const heatExchAbove: IHeatExchanger[] = [];
+    let deltaHhot = 0;
+    let deltaHcold = 0;
+    let deltaHres = 0;
+    for (let i = 0; i < hotStreamsTop.length; i++) {
+      if (coldStreamsTop[i] !== undefined) {
+        if (hotStreamsTop[i].flowHeatCapacity <= coldStreamsTop[i].flowHeatCapacity) {
+          // Определяем разницу энтальпий
+          deltaHhot = hotStreamsTop[i].flowHeatCapacity * (hotStreamsTop[i].outletTemp - hotStreamsTop[i].inletTemp);
+          deltaHcold = coldStreamsTop[i].flowHeatCapacity * (coldStreamsTop[i].outletTemp - coldStreamsTop[i].inletTemp);
+
+          // Определяем наименьшую энтальпию и с ней работаем
+          deltaHres = this.minEntalphy(deltaHhot, deltaHcold);
+
+          // Ставим теплообменник
+          heatExchAbove.push({
+            hotStreamId: hotStreamsTop[i].parentId,
+            coldStreamId: coldStreamsTop[i].parentId,
+            deltaH: deltaHres,
+            inletTempHot: hotStreamsTop[i].outletTemp + deltaHres / hotStreamsTop[i].flowHeatCapacity,
+            outletTempHot: hotStreamsTop[i].outletTemp,
+            inletTempCold: coldStreamsTop[i].inletTemp,
+            outletTempCold: coldStreamsTop[i].inletTemp + deltaHres / coldStreamsTop[i].flowHeatCapacity,
+          });
+
+          // Изменяем температуры и тепловые потенциалы потоков
+          hotStreamsTop[i].outletTemp = hotStreamsTop[i].outletTemp + deltaHres / hotStreamsTop[i].flowHeatCapacity;
+          hotStreamsTop[i].potentialHeat = hotStreamsTop[i].potentialHeat - deltaHres;
+          coldStreamsTop[i].inletTemp = coldStreamsTop[i].inletTemp + deltaHres / coldStreamsTop[i].flowHeatCapacity;
+          coldStreamsTop[i].potentialHeat = coldStreamsTop[i].potentialHeat - deltaHres;
+        }
+      }
+    }
+
+    return { hotStreamsTop, coldStreamsTop, heatExchAbove };
   }
 }
