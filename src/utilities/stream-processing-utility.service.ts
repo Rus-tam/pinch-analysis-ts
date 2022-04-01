@@ -406,10 +406,8 @@ export class StreamProcessingUtility {
       }
     }
 
-    console.log(hotStreamsBot);
-    console.log(coldStreamsBot);
-    console.log("____________________");
-    console.log(heatExchBelow);
+    hotStreamsBot = hotStreamsBot.filter((stream) => stream.potentialHeat !== 0);
+    coldStreamsBot = coldStreamsBot.filter((stream) => stream.potentialHeat !== 0);
 
     return { hotStreamsBot, coldStreamsBot, heatExchBelow };
   }
@@ -451,6 +449,9 @@ export class StreamProcessingUtility {
         }
       }
     }
+
+    hotStreamsTop = hotStreamsTop.filter((stream) => stream.potentialHeat !== 0);
+    coldStreamsTop = coldStreamsTop.filter((stream) => stream.potentialHeat !== 0);
 
     return { hotStreamsTop, coldStreamsTop, heatExchAbove };
   }

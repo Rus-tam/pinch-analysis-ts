@@ -106,12 +106,14 @@ export class AppService {
     let deltaHhot = 0;
     let deltaHcold = 0;
     let deltaHres = 0;
+    let hotUtils = [];
 
     const { hotPinchPoint, coldPinchPoint } = this.pinchPointFinder(streams);
     const streamRelPinch = this.streamProcUtility.streamsRelativlyPinch(streams, hotPinchPoint, coldPinchPoint);
     let { hotStreamsTopSplited, coldStreamsTopSplited, hotStreamsBotSplited, coldStreamsBotSplited } =
       this.streamProcUtility.streamSpliting(streamRelPinch);
 
+    // Расставляем теплообменники рядом с пинчом
     let { hotStreamsTop, coldStreamsTop, heatExchAbove } = this.streamProcUtility.pinchNearHESetupAbove(
       hotStreamsTopSplited,
       coldStreamsTopSplited,
@@ -121,43 +123,45 @@ export class AppService {
       coldStreamsBotSplited,
     );
 
-    // while (hotStreamsTop.length !== 0) {
-    //   let { hotStream, coldStream } = this.streamProcUtility.maxCpPar(hotStreamsTop, coldStreamsTop);
-    //   let hotIndex = hotStreamsTop.indexOf(hotStream);
-    //   let coldIndex = coldStreamsTop.indexOf(coldStream);
+    for (let i = 0; i < coldStreamsTop.length; i++) {
+      if (hotStreamsTop[i] !== undefined) {
+        deltaHhot = hotStreamsTop[i].flowHeatCapacity * (hotStreamsTop[i].outletTemp - hotStreamsTop[i].inletTemp);
+        deltaHcold = coldStreamsTop[i].flowHeatCapacity * (coldStreamsTop[i].outletTemp - coldStreamsTop[i].inletTemp);
 
-    //   if (hotStream.flowHeatCapacity <= coldStream.flowHeatCapacity) {
-    //     deltaHhot = hotStream.flowHeatCapacity * (hotStream.outletTemp - hotStream.inletTemp);
-    //     deltaHcold = coldStream.flowHeatCapacity * (coldStream.outletTemp - coldStream.inletTemp);
+        // Находим наименьшее значение энтальпии
+        deltaHres = this.streamProcUtility.minEntalphy(deltaHhot, deltaHcold);
 
-    // if (Math.abs(deltaHhot) >= Math.abs(deltaHcold)) {
-    //   deltaHres = Math.abs(deltaHcold);
-    // } else {
-    //   deltaHres = Math.abs(deltaHhot);
-    // }
+        // Определяем теплообменник
+        heatExchAbove.push({
+          hotStreamId: hotStreamsTop[i].parentId,
+          coldStreamId: coldStreamsTop[i].parentId,
+          deltaH: deltaHres,
+          inletTempHot: hotStreamsTop[i].outletTemp + deltaHres / hotStreamsTop[i].flowHeatCapacity,
+          outletTempHot: hotStreamsTop[i].outletTemp,
+          inletTempCold: coldStreamsTop[i].inletTemp,
+          outletTempCold: coldStreamsTop[i].inletTemp + deltaHres / coldStreamsTop[i].flowHeatCapacity,
+        });
 
-    //     heatExchAbove.push({
-    // hotStreamId: hotStream.parentId,
-    // coldStreamId: coldStream.parentId,
-    // deltaH: deltaHres,
-    // inletTempHot: hotStream.outletTemp + deltaHres / hotStream.flowHeatCapacity,
-    // outletTempHot: hotStream.outletTemp,
-    // inletTempCold: coldStream.inletTemp,
-    // outletTempCold: coldStream.inletTemp + deltaHres / coldStream.flowHeatCapacity,
-    //     });
-    //     hotStreamsTop[hotIndex].outletTemp = hotStream.outletTemp + deltaHres / hotStream.flowHeatCapacity;
-    //     hotStreamsTop[hotIndex].potentialHeat = hotStreamsTop[hotIndex].potentialHeat - deltaHres;
-    //     coldStreamsTop[coldIndex].inletTemp = coldStream.inletTemp + deltaHres / coldStream.flowHeatCapacity;
-    //     coldStreamsTop[coldIndex].potentialHeat = coldStreamsTop[coldIndex].potentialHeat - deltaHres;
+        // Изменяем взаимодействующие потоки
+        hotStreamsTop[i].outletTemp = hotStreamsTop[i].outletTemp + deltaHres / hotStreamsTop[i].flowHeatCapacity;
+        hotStreamsTop[i].potentialHeat = hotStreamsTop[i].potentialHeat - deltaHres;
+        coldStreamsTop[i].inletTemp = coldStreamsTop[i].inletTemp + deltaHres / coldStreamsTop[i].flowHeatCapacity;
+        coldStreamsTop[i].potentialHeat = coldStreamsTop[i].potentialHeat - deltaHres;
+      }
+    }
 
-    //     hotStreamsTop = hotStreamsTop.filter((stream) => stream.potentialHeat > 0);
-    //     coldStreamsTop = coldStreamsTop.filter((stream) => stream.potentialHeat > 0);
-    //   }
-    // }
+    hotStreamsTop = hotStreamsTop.filter((stream) => stream.potentialHeat > 0.1);
+    coldStreamsTop = coldStreamsTop.filter((stream) => stream.potentialHeat > 0.1);
 
-    // console.log(heatExchAbove);
-    // console.log("_________________");
-    // console.log(hotStreamsTop);
-    // console.log(coldStreamsTop);
+    for (let i = 0; i < coldStreamsTop.length; i++) {
+      if (coldStreamsTop[i] !== undefined) {
+        hotUtils.push({
+          coldStreamId: coldStreamsTop[i].parentId,
+          deltaH: coldStreamsTop[i].potentialHeat,
+          inletTemp: coldStreamsTop[i].inletTemp,
+          outletTemp: coldStreamsTop[i].outletTemp,
+        });
+      }
+    }
   }
 }
