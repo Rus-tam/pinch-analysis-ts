@@ -391,16 +391,16 @@ export class StreamProcessingUtility {
             hotStreamId: hotStreamsBot[i].parentId,
             coldStreamId: coldStreamsBot[i].parentId,
             deltaH: deltaHres,
-            inletTempHot: hotStreamsBot[i].outletTemp + deltaHres / hotStreamsBot[i].flowHeatCapacity,
-            outletTempHot: hotStreamsBot[i].outletTemp,
-            inletTempCold: coldStreamsBot[i].inletTemp,
-            outletTempCold: coldStreamsBot[i].inletTemp + deltaHres / coldStreamsBot[i].flowHeatCapacity,
+            inletTempHot: hotStreamsBot[i].inletTemp,
+            outletTempHot: hotStreamsBot[i].inletTemp - deltaHres / hotStreamsBot[i].flowHeatCapacity,
+            inletTempCold: coldStreamsBot[i].outletTemp - deltaHres / coldStreamsBot[i].flowHeatCapacity,
+            outletTempCold: coldStreamsBot[i].outletTemp,
           });
 
           // Изменяем температуры и тепловые потенциалы потоков
           hotStreamsBot[i].outletTemp = hotStreamsBot[i].outletTemp + deltaHres / hotStreamsBot[i].flowHeatCapacity;
           hotStreamsBot[i].potentialHeat = hotStreamsBot[i].potentialHeat - deltaHres;
-          coldStreamsBot[i].inletTemp = coldStreamsBot[i].inletTemp + deltaHres / coldStreamsBot[i].flowHeatCapacity;
+          coldStreamsBot[i].outletTemp = coldStreamsBot[i].outletTemp - deltaHres / coldStreamsBot[i].flowHeatCapacity;
           coldStreamsBot[i].potentialHeat = coldStreamsBot[i].potentialHeat - deltaHres;
         }
       }

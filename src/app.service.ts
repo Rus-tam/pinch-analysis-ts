@@ -123,6 +123,49 @@ export class AppService {
       coldStreamsBotSplited,
     );
 
+    // console.log(hotStreamsBot);
+    // console.log(coldStreamsBot);
+    // console.log("___________________");
+    // console.log(heatExchBelow);
+
+    // Раставляем теплообменники ниже пинча
+    for (let i = 0; i < hotStreamsBot.length; i++) {
+      if (coldStreamsBot[i] !== undefined) {
+        deltaHhot = hotStreamsBot[i].flowHeatCapacity * (hotStreamsBot[i].outletTemp - hotStreamsBot[i].inletTemp);
+        deltaHcold = coldStreamsBot[i].flowHeatCapacity * (coldStreamsBot[i].outletTemp - coldStreamsBot[i].inletTemp);
+
+        // Находим наименьшее значение энтальпии
+        deltaHres = this.streamProcUtility.minEntalphy(deltaHhot, deltaHcold);
+
+        // Определяем теплообменник
+        heatExchBelow.push({
+          hotStreamId: hotStreamsBot[i].parentId,
+          coldStreamId: coldStreamsBot[i].parentId,
+          deltaH: deltaHres,
+          inletTempHot: hotStreamsBot[i].inletTemp,
+          outletTempHot: hotStreamsBot[i].inletTemp - deltaHres / hotStreamsBot[i].flowHeatCapacity,
+          inletTempCold: coldStreamsBot[i].outletTemp - deltaHres / coldStreamsBot[i].flowHeatCapacity,
+          outletTempCold: coldStreamsBot[i].outletTemp,
+        });
+
+        // Изменяем взаимодействующие потоки
+        hotStreamsBot[i].inletTemp = hotStreamsBot[i].inletTemp - deltaHres / hotStreamsBot[i].flowHeatCapacity;
+        hotStreamsBot[i].potentialHeat = hotStreamsBot[i].potentialHeat - deltaHres;
+        coldStreamsBot[i].outletTemp = coldStreamsBot[i].outletTemp - deltaHres / coldStreamsBot[i].flowHeatCapacity;
+        coldStreamsBot[i].potentialHeat = coldStreamsBot[i].potentialHeat - deltaHres;
+
+        // Фильтруем список потоков
+        hotStreamsBot = hotStreamsBot.filter((stream) => stream.potentialHeat > 0.1);
+        coldStreamsBot = coldStreamsBot.filter((stream) => stream.potentialHeat > 0.1);
+      }
+    }
+
+    console.log(hotStreamsBot);
+    console.log(coldStreamsBot);
+    console.log("_________________");
+    console.log(heatExchBelow);
+
+    // Расставляем теплообменники выше пинча
     for (let i = 0; i < coldStreamsTop.length; i++) {
       if (hotStreamsTop[i] !== undefined) {
         deltaHhot = hotStreamsTop[i].flowHeatCapacity * (hotStreamsTop[i].outletTemp - hotStreamsTop[i].inletTemp);
@@ -150,9 +193,11 @@ export class AppService {
       }
     }
 
+    // Фильтруем список потоков
     hotStreamsTop = hotStreamsTop.filter((stream) => stream.potentialHeat > 0.1);
     coldStreamsTop = coldStreamsTop.filter((stream) => stream.potentialHeat > 0.1);
 
+    // Расставляем горячие утилиты выше пинча
     for (let i = 0; i < coldStreamsTop.length; i++) {
       if (coldStreamsTop[i] !== undefined) {
         hotUtils.push({
