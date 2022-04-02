@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { ConstraintMetadata } from "class-validator/types/metadata/ConstraintMetadata";
 import { StreamDto } from "./dto/stream.dto";
 import { IStreamData } from "./interfaces/stream-data.interface";
+import { IUtils } from "./interfaces/utils.interface";
 import { StreamProcessingUtility } from "./utilities/stream-processing-utility.service";
 
 @Injectable()
@@ -106,7 +107,8 @@ export class AppService {
     let deltaHhot = 0;
     let deltaHcold = 0;
     let deltaHres = 0;
-    let hotUtils = [];
+    let hotUtils: IUtils[] = [];
+    let coldUtils: IUtils[] = [];
 
     const { hotPinchPoint, coldPinchPoint } = this.pinchPointFinder(streams);
     const streamRelPinch = this.streamProcUtility.streamsRelativlyPinch(streams, hotPinchPoint, coldPinchPoint);
@@ -122,11 +124,6 @@ export class AppService {
       hotStreamsBotSplited,
       coldStreamsBotSplited,
     );
-
-    // console.log(hotStreamsBot);
-    // console.log(coldStreamsBot);
-    // console.log("___________________");
-    // console.log(heatExchBelow);
 
     // Раставляем теплообменники ниже пинча
     for (let i = 0; i < hotStreamsBot.length; i++) {
@@ -153,17 +150,24 @@ export class AppService {
         hotStreamsBot[i].potentialHeat = hotStreamsBot[i].potentialHeat - deltaHres;
         coldStreamsBot[i].outletTemp = coldStreamsBot[i].outletTemp - deltaHres / coldStreamsBot[i].flowHeatCapacity;
         coldStreamsBot[i].potentialHeat = coldStreamsBot[i].potentialHeat - deltaHres;
-
-        // Фильтруем список потоков
-        hotStreamsBot = hotStreamsBot.filter((stream) => stream.potentialHeat > 0.1);
-        coldStreamsBot = coldStreamsBot.filter((stream) => stream.potentialHeat > 0.1);
       }
     }
 
-    console.log(hotStreamsBot);
-    console.log(coldStreamsBot);
-    console.log("_________________");
-    console.log(heatExchBelow);
+    // Фильтруем список потоков
+    hotStreamsBot = hotStreamsBot.filter((stream) => stream.potentialHeat > 0.1);
+    coldStreamsBot = coldStreamsBot.filter((stream) => stream.potentialHeat > 0.1);
+
+    // Расставляем холодные утилиты ниже пинча
+    for (let i = 0; i < hotStreamsBot.length; i++) {
+      if (hotStreamsBot[i] !== undefined) {
+        coldUtils.push({
+          streamId: hotStreamsBot[i].parentId,
+          deltaH: hotStreamsBot[i].potentialHeat,
+          inletTemp: hotStreamsBot[i].inletTemp,
+          outletTemp: hotStreamsBot[i].outletTemp,
+        });
+      }
+    }
 
     // Расставляем теплообменники выше пинча
     for (let i = 0; i < coldStreamsTop.length; i++) {
@@ -201,7 +205,7 @@ export class AppService {
     for (let i = 0; i < coldStreamsTop.length; i++) {
       if (coldStreamsTop[i] !== undefined) {
         hotUtils.push({
-          coldStreamId: coldStreamsTop[i].parentId,
+          streamId: coldStreamsTop[i].parentId,
           deltaH: coldStreamsTop[i].potentialHeat,
           inletTemp: coldStreamsTop[i].inletTemp,
           outletTemp: coldStreamsTop[i].outletTemp,
