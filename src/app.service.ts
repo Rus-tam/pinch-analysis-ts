@@ -3,11 +3,15 @@ import { ConstraintMetadata } from "class-validator/types/metadata/ConstraintMet
 import { StreamDto } from "./dto/stream.dto";
 import { IStreamData } from "./interfaces/stream-data.interface";
 import { IUtils } from "./interfaces/utils.interface";
+import { ExchangerSetupUtility } from "./utilities/exchanger-setup-utility";
 import { StreamProcessingUtility } from "./utilities/stream-processing-utility.service";
 
 @Injectable()
 export class AppService {
-  constructor(private readonly streamProcUtility: StreamProcessingUtility) {}
+  constructor(
+    private readonly streamProcUtility: StreamProcessingUtility,
+    private readonly exchangerSetupUtility: ExchangerSetupUtility,
+  ) {}
 
   pinchPointFinder(streams: IStreamData[]): {
     hotPinchPoint: number;
@@ -116,11 +120,11 @@ export class AppService {
       this.streamProcUtility.streamSpliting(streamRelPinch);
 
     // Расставляем теплообменники рядом с пинчом
-    let { hotStreamsTop, coldStreamsTop, heatExchAbove } = this.streamProcUtility.pinchNearHESetupAbove(
+    let { hotStreamsTop, coldStreamsTop, heatExchAbove } = this.exchangerSetupUtility.pinchNearHESetupAbove(
       hotStreamsTopSplited,
       coldStreamsTopSplited,
     );
-    let { hotStreamsBot, coldStreamsBot, heatExchBelow } = this.streamProcUtility.pinchNearHESetupBelow(
+    let { hotStreamsBot, coldStreamsBot, heatExchBelow } = this.exchangerSetupUtility.pinchNearHESetupBelow(
       hotStreamsBotSplited,
       coldStreamsBotSplited,
     );
