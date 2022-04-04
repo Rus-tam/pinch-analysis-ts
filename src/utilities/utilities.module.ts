@@ -1,5 +1,5 @@
 import { Module } from "@nestjs/common";
-import { ExchangerSetupUtility } from "./exchanger-setup-utility";
+import { ExchangerSetupUtility } from "./exchanger-setup-utility.service";
 import { StreamProcessingUtility } from "./stream-processing-utility.service";
 
 @Module({

@@ -1,5 +1,6 @@
 import { IHeatExchanger } from "src/interfaces/heat-exchanger.interface";
 import { IRelativePinchStream } from "src/interfaces/relative-pinch-stream.interface";
+import { IUtils } from "src/interfaces/utils.interface";
 import { StreamProcessingUtility } from "./stream-processing-utility.service";
 
 export class ExchangerSetupUtility {
@@ -21,7 +22,7 @@ export class ExchangerSetupUtility {
           deltaHcold = coldStreamsBot[i].flowHeatCapacity * (coldStreamsBot[i].outletTemp - coldStreamsBot[i].inletTemp);
 
           // Определяем наименьшую энтальпию и с ней работаем
-          deltaHres = this.streamProcUtility.minEntalphy(deltaHhot, deltaHcold);
+          deltaHres = this.minEntalphy(deltaHhot, deltaHcold);
 
           // Ставим теплообменник
           heatExchBelow.push({
@@ -65,7 +66,7 @@ export class ExchangerSetupUtility {
           deltaHcold = coldStreamsTop[i].flowHeatCapacity * (coldStreamsTop[i].outletTemp - coldStreamsTop[i].inletTemp);
 
           // Определяем наименьшую энтальпию и с ней работаем
-          deltaHres = this.streamProcUtility.minEntalphy(deltaHhot, deltaHcold);
+          deltaHres = this.minEntalphy(deltaHhot, deltaHcold);
 
           // Ставим теплообменник
           heatExchAbove.push({
@@ -91,5 +92,73 @@ export class ExchangerSetupUtility {
     coldStreamsTop = coldStreamsTop.filter((stream) => stream.potentialHeat !== 0);
 
     return { hotStreamsTop, coldStreamsTop, heatExchAbove };
+  }
+
+  utilsSetup(
+    hotStreamsTop: IRelativePinchStream[],
+    coldStreamsTop: IRelativePinchStream[],
+    hotStreamsBot: IRelativePinchStream[],
+    coldStreamsBot: IRelativePinchStream[],
+  ): { hotUtils: IUtils[]; coldUtils: IUtils[] } {
+    let coldUtils: IUtils[] = [];
+    let hotUtils: IUtils[] = [];
+
+    if (hotStreamsBot.length !== 0) {
+      for (let stream of hotStreamsBot) {
+        coldUtils.push({
+          streamId: stream.parentId,
+          deltaH: stream.potentialHeat,
+          inletTemp: stream.inletTemp,
+          outletTemp: stream.outletTemp,
+          status: "good",
+        });
+      }
+    }
+    if (coldStreamsBot.length !== 0) {
+      for (let stream of coldStreamsBot) {
+        hotUtils.push({
+          streamId: stream.parentId,
+          deltaH: stream.potentialHeat,
+          inletTemp: stream.inletTemp,
+          outletTemp: stream.outletTemp,
+          status: "bad",
+        });
+      }
+    }
+    if (coldStreamsTop.length !== 0) {
+      for (let stream of coldStreamsTop) {
+        hotUtils.push({
+          streamId: stream.parentId,
+          deltaH: stream.potentialHeat,
+          inletTemp: stream.inletTemp,
+          outletTemp: stream.outletTemp,
+          status: "good",
+        });
+      }
+    }
+    if (hotStreamsTop.length !== 0) {
+      for (let stream of hotStreamsTop) {
+        coldUtils.push({
+          streamId: stream.parentId,
+          deltaH: stream.potentialHeat,
+          inletTemp: stream.inletTemp,
+          outletTemp: stream.outletTemp,
+          status: "bad",
+        });
+      }
+    }
+
+    return { hotUtils, coldUtils };
+  }
+
+  minEntalphy(deltaHhot: number, deltaHcold: number): number {
+    let deltaHres: number = 0;
+    if (Math.abs(deltaHhot) >= Math.abs(deltaHcold)) {
+      deltaHres = Math.abs(deltaHcold);
+    } else {
+      deltaHres = Math.abs(deltaHhot);
+    }
+
+    return deltaHres;
   }
 }

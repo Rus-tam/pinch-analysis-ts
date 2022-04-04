@@ -3,4 +3,5 @@ export interface IUtils {
   deltaH: number;
   inletTemp: number;
   outletTemp: number;
+  status: string;
 }

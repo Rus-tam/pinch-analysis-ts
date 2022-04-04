@@ -1,9 +1,8 @@
 import { Injectable } from "@nestjs/common";
-import { ConstraintMetadata } from "class-validator/types/metadata/ConstraintMetadata";
 import { StreamDto } from "./dto/stream.dto";
 import { IStreamData } from "./interfaces/stream-data.interface";
 import { IUtils } from "./interfaces/utils.interface";
-import { ExchangerSetupUtility } from "./utilities/exchanger-setup-utility";
+import { ExchangerSetupUtility } from "./utilities/exchanger-setup-utility.service";
 import { StreamProcessingUtility } from "./utilities/stream-processing-utility.service";
 
 @Injectable()
@@ -111,8 +110,6 @@ export class AppService {
     let deltaHhot = 0;
     let deltaHcold = 0;
     let deltaHres = 0;
-    let hotUtils: IUtils[] = [];
-    let coldUtils: IUtils[] = [];
 
     const { hotPinchPoint, coldPinchPoint } = this.pinchPointFinder(streams);
     const streamRelPinch = this.streamProcUtility.streamsRelativlyPinch(streams, hotPinchPoint, coldPinchPoint);
@@ -136,7 +133,7 @@ export class AppService {
         deltaHcold = coldStreamsBot[i].flowHeatCapacity * (coldStreamsBot[i].outletTemp - coldStreamsBot[i].inletTemp);
 
         // Находим наименьшее значение энтальпии
-        deltaHres = this.streamProcUtility.minEntalphy(deltaHhot, deltaHcold);
+        deltaHres = this.exchangerSetupUtility.minEntalphy(deltaHhot, deltaHcold);
 
         // Определяем теплообменник
         heatExchBelow.push({
@@ -162,16 +159,20 @@ export class AppService {
     coldStreamsBot = coldStreamsBot.filter((stream) => stream.potentialHeat > 0.1);
 
     // Расставляем холодные утилиты ниже пинча
-    for (let i = 0; i < hotStreamsBot.length; i++) {
-      if (hotStreamsBot[i] !== undefined) {
-        coldUtils.push({
-          streamId: hotStreamsBot[i].parentId,
-          deltaH: hotStreamsBot[i].potentialHeat,
-          inletTemp: hotStreamsBot[i].inletTemp,
-          outletTemp: hotStreamsBot[i].outletTemp,
-        });
-      }
-    }
+    // if (hotStreamsBot.length !== 0) {
+    //   for (let stream of hotStreamsBot) {
+    //     coldUtils.push({
+    //       streamId: stream.parentId,
+    //       deltaH: stream.potentialHeat,
+    //       inletTemp: stream.inletTemp,
+    //       outletTemp: stream.outletTemp,
+    //       status: "good",
+    //     });
+    //   }
+    // }
+
+    // Расставляем холодные утилиты выше пинча, если не удалось рекуперировать все тепло горячих потоков
+    // Это вынужденная мера. Выше пинча холодных утилит не должно быть
 
     // Расставляем теплообменники выше пинча
     for (let i = 0; i < coldStreamsTop.length; i++) {
@@ -180,7 +181,7 @@ export class AppService {
         deltaHcold = coldStreamsTop[i].flowHeatCapacity * (coldStreamsTop[i].outletTemp - coldStreamsTop[i].inletTemp);
 
         // Находим наименьшее значение энтальпии
-        deltaHres = this.streamProcUtility.minEntalphy(deltaHhot, deltaHcold);
+        deltaHres = this.exchangerSetupUtility.minEntalphy(deltaHhot, deltaHcold);
 
         // Определяем теплообменник
         heatExchAbove.push({
@@ -206,15 +207,40 @@ export class AppService {
     coldStreamsTop = coldStreamsTop.filter((stream) => stream.potentialHeat > 0.1);
 
     // Расставляем горячие утилиты выше пинча
-    for (let i = 0; i < coldStreamsTop.length; i++) {
-      if (coldStreamsTop[i] !== undefined) {
-        hotUtils.push({
-          streamId: coldStreamsTop[i].parentId,
-          deltaH: coldStreamsTop[i].potentialHeat,
-          inletTemp: coldStreamsTop[i].inletTemp,
-          outletTemp: coldStreamsTop[i].outletTemp,
-        });
-      }
-    }
+    // if (coldStreamsTop.length !== 0) {
+    //   for (let stream of coldStreamsTop) {
+    //     hotUtils.push({
+    //       streamId: stream.parentId,
+    //       deltaH: stream.potentialHeat,
+    //       inletTemp: stream.inletTemp,
+    //       outletTemp: stream.outletTemp,
+    //       status: "good",
+    //     });
+    //   }
+    // }
+
+    // Расставляем холодные утилиты выше пинча, если не удалось рекуперировать все тепло горячих потоков
+    // Это вынужденная мера. Выше пинча холодных утилит не должно быть
+    // if (hotStreamsTop.length !== 0) {
+    //   for (let stream of hotStreamsTop) {
+    //     coldUtils.push({
+    //       streamId: stream.parentId,
+    //       deltaH: stream.potentialHeat,
+    //       inletTemp: stream.inletTemp,
+    //       outletTemp: stream.outletTemp,
+    //       status: "bad",
+    //     });
+    //   }
+    // }
+
+    // Расставляем холодные и горячие утилиты
+    let { hotUtils, coldUtils } = this.exchangerSetupUtility.utilsSetup(
+      hotStreamsTop,
+      coldStreamsTop,
+      hotStreamsBot,
+      coldStreamsBot,
+    );
+
+    return { heatExchAbove, heatExchBelow, hotUtils, coldUtils };
   }
 }
