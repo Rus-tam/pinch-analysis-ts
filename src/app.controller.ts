@@ -26,5 +26,16 @@ export class AppController {
     console.log("Hot utils", hotUtils);
     console.log("***********************");
     console.log("Cold Utils", coldUtils);
+
+    return {
+      "Hot pinch point": hotPinchPoint,
+      "Cold pinch point": coldPinchPoint,
+      "Hot utilities": hotUtilitiesAmount,
+      "Cold utilities": coldUtilitiesAmount,
+      "Heat exchangers above": heatExchAbove,
+      "Heat exchangers below": heatExchBelow,
+      "Hot utils": hotUtils,
+      "Cold utils": coldUtils,
+    };
   }
 }
