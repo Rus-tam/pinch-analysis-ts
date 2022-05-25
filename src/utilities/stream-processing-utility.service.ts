@@ -207,28 +207,32 @@ export class StreamProcessingUtility {
       coldStreamsTopSplited = this.streamSortingByCp(coldStreamsAbove);
 
       let iterator = 0;
-      while (hotStreamsTopSplited[iterator].flowHeatCapacity > coldStreamsTopSplited[iterator].flowHeatCapacity) {
-        let { streamOne, streamTwo } = this.streamSplitter(hotStreamsTopSplited[iterator]);
-        let index = hotStreamsTopSplited.indexOf(hotStreamsTopSplited[iterator]);
-        hotStreamsTopSplited = hotStreamsTopSplited.filter((stream) => stream !== hotStreamsTopSplited[index]);
-        hotStreamsTopSplited.push(streamOne);
-        hotStreamsTopSplited.push(streamTwo);
-        hotStreamsTopSplited = this.streamSortingByCp(hotStreamsTopSplited);
+      if (hotStreamsTopSplited.length > 0 && coldStreamsTopSplited.length > 0) {
+        while (hotStreamsTopSplited[iterator].flowHeatCapacity > coldStreamsTopSplited[iterator].flowHeatCapacity) {
+          let { streamOne, streamTwo } = this.streamSplitter(hotStreamsTopSplited[iterator]);
+          let index = hotStreamsTopSplited.indexOf(hotStreamsTopSplited[iterator]);
+          hotStreamsTopSplited = hotStreamsTopSplited.filter((stream) => stream !== hotStreamsTopSplited[index]);
+          hotStreamsTopSplited.push(streamOne);
+          hotStreamsTopSplited.push(streamTwo);
+          hotStreamsTopSplited = this.streamSortingByCp(hotStreamsTopSplited);
 
-        iterator++;
+          iterator++;
+        }
       }
     } else {
       let iterator = 0;
       hotStreamsTopSplited = this.streamSortingByCp(hotStreamsAbove);
       coldStreamsTopSplited = this.streamSortingByCp(coldStreamsAbove);
-      while (hotStreamsTopSplited.length >= coldStreamsTopSplited.length) {
-        let { streamOne, streamTwo } = this.streamSplitter(coldStreamsTopSplited[iterator]);
-        let index = coldStreamsTopSplited.indexOf(coldStreamsTopSplited[iterator]);
-        coldStreamsTopSplited = coldStreamsTopSplited.filter((stream) => stream !== coldStreamsTopSplited[index]);
-        coldStreamsTopSplited.push(streamOne);
-        coldStreamsTopSplited.push(streamTwo);
-        coldStreamsTopSplited = this.streamSortingByCp(coldStreamsTopSplited);
-        iterator++;
+      if (hotStreamsTopSplited.length > 0 && coldStreamsTopSplited.length > 0) {
+        while (hotStreamsTopSplited.length >= coldStreamsTopSplited.length) {
+          let { streamOne, streamTwo } = this.streamSplitter(coldStreamsTopSplited[iterator]);
+          let index = coldStreamsTopSplited.indexOf(coldStreamsTopSplited[iterator]);
+          coldStreamsTopSplited = coldStreamsTopSplited.filter((stream) => stream !== coldStreamsTopSplited[index]);
+          coldStreamsTopSplited.push(streamOne);
+          coldStreamsTopSplited.push(streamTwo);
+          coldStreamsTopSplited = this.streamSortingByCp(coldStreamsTopSplited);
+          iterator++;
+        }
       }
     }
 
@@ -236,33 +240,35 @@ export class StreamProcessingUtility {
     if (hotStreamsBelow.length >= coldStreamsBelow.length) {
       hotStreamsBotSplited = this.streamSortingByCp(hotStreamsBelow);
       coldStreamsBotSplited = this.streamSortingByCp(coldStreamsBelow);
+      if (hotStreamsBotSplited.length > 0 && coldStreamsBotSplited.length > 0) {
+        let iterator = 0;
+        while (hotStreamsBotSplited[iterator].flowHeatCapacity <= coldStreamsBotSplited[iterator].flowHeatCapacity) {
+          let { streamOne, streamTwo } = this.streamSplitter(coldStreamsBotSplited[iterator]);
+          let index = coldStreamsBotSplited.indexOf(coldStreamsBotSplited[iterator]);
+          coldStreamsBotSplited = coldStreamsBotSplited.filter((stream) => stream !== coldStreamsBotSplited[index]);
+          coldStreamsBotSplited.push(streamOne);
+          coldStreamsBotSplited.push(streamTwo);
+          coldStreamsBotSplited = this.streamSortingByCp(coldStreamsBotSplited);
 
-      let iterator = 0;
-      while (hotStreamsBotSplited[iterator].flowHeatCapacity <= coldStreamsBotSplited[iterator].flowHeatCapacity) {
-        let { streamOne, streamTwo } = this.streamSplitter(coldStreamsBotSplited[iterator]);
-        let index = coldStreamsBotSplited.indexOf(coldStreamsBotSplited[iterator]);
-        coldStreamsBotSplited = coldStreamsBotSplited.filter((stream) => stream !== coldStreamsBotSplited[index]);
-        coldStreamsBotSplited.push(streamOne);
-        coldStreamsBotSplited.push(streamTwo);
-        coldStreamsBotSplited = this.streamSortingByCp(coldStreamsBotSplited);
-
-        iterator++;
+          iterator++;
+        }
       }
     } else {
       let iterator = 0;
 
       hotStreamsBotSplited = this.streamSortingByCp(hotStreamsBelow);
       coldStreamsBotSplited = this.streamSortingByCp(coldStreamsBelow);
+      if (hotStreamsBotSplited.length > 0 && coldStreamsBotSplited.length > 0) {
+        while (hotStreamsBotSplited.length >= coldStreamsBotSplited.length) {
+          let { streamOne, streamTwo } = this.streamSplitter(hotStreamsBotSplited[iterator]);
+          let index = hotStreamsBotSplited.indexOf(hotStreamsBotSplited[iterator]);
+          hotStreamsBotSplited = hotStreamsBotSplited.filter((stream) => stream !== hotStreamsBotSplited[index]);
+          hotStreamsBotSplited.push(streamOne);
+          hotStreamsBotSplited.push(streamTwo);
+          hotStreamsBotSplited = this.streamSortingByCp(hotStreamsBotSplited);
 
-      while (hotStreamsBotSplited.length >= coldStreamsBotSplited.length) {
-        let { streamOne, streamTwo } = this.streamSplitter(hotStreamsBotSplited[iterator]);
-        let index = hotStreamsBotSplited.indexOf(hotStreamsBotSplited[iterator]);
-        hotStreamsBotSplited = hotStreamsBotSplited.filter((stream) => stream !== hotStreamsBotSplited[index]);
-        hotStreamsBotSplited.push(streamOne);
-        hotStreamsBotSplited.push(streamTwo);
-        hotStreamsBotSplited = this.streamSortingByCp(hotStreamsBotSplited);
-
-        iterator++;
+          iterator++;
+        }
       }
     }
 
