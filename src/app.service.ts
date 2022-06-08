@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { interval } from "rxjs";
 import { StreamDto } from "./dto/stream.dto";
 import { IStreamData } from "./interfaces/stream-data.interface";
 import { IUtils } from "./interfaces/utils.interface";
@@ -30,6 +31,7 @@ export class AppService {
     let coldUtilitiesAmount = 0;
     const shiftedStreams = this.streamProcUtility.shiftedStreamMaker(streams);
     const intervals = this.streamProcUtility.intervalMaker(shiftedStreams);
+
     // Тут будут храниться данные о потоках чьи температуры выставлены в порядке возрастания
     const modifiedStreams: IStreamData[] = [];
     for (let stream of shiftedStreams) {
@@ -82,26 +84,41 @@ export class AppService {
       coldFlowHeatCap = 0;
     }
 
+    console.log(intervals[2]);
+    // console.log(minValue);
+
+    // Округление значений интервалов
+    const roundedIntervals = this.streamProcUtility.roundValues(intervals);
+
+    console.log(roundedIntervals[2]);
+
     if (isNegativeValue) {
-      for (let i = 0; i < intervals.length; i++) {
+      for (let i = 0; i < roundedIntervals.length; i++) {
         minValue = minValue * -1;
         if (i === 0) {
-          intervals[i].incomingHeat = minValue;
-          intervals[i].outgoingHeat = intervals[i].incomingHeat - intervals[i].deltaH;
+          roundedIntervals[i].incomingHeat = parseFloat(minValue.toFixed(2));
+          roundedIntervals[i].outgoingHeat = parseFloat(
+            (roundedIntervals[i].incomingHeat - roundedIntervals[i].deltaH).toFixed(2),
+          );
         } else {
-          intervals[i].incomingHeat = intervals[i - 1].outgoingHeat;
-          intervals[i].outgoingHeat = intervals[i].incomingHeat - intervals[i].deltaH;
+          roundedIntervals[i].incomingHeat = parseFloat(roundedIntervals[i - 1].outgoingHeat.toFixed(2));
+          roundedIntervals[i].outgoingHeat = parseFloat(
+            (roundedIntervals[i].incomingHeat - roundedIntervals[i].deltaH).toFixed(2),
+          );
         }
 
-        if (intervals[i].outgoingHeat === 0) {
-          pinchPoint = intervals[i].end;
-          hotPinchPoint = pinchPoint + modifiedStreams[0].deltaT / 2;
-          coldPinchPoint = pinchPoint - modifiedStreams[0].deltaT / 2;
+        if (roundedIntervals[i].outgoingHeat === 0) {
+          pinchPoint = roundedIntervals[i].end;
+          hotPinchPoint = parseFloat((pinchPoint + modifiedStreams[0].deltaT / 2).toFixed(2));
+          coldPinchPoint = parseFloat((pinchPoint - modifiedStreams[0].deltaT / 2).toFixed(2));
         }
       }
     }
-    hotUtilitiesAmount = intervals[0].incomingHeat;
-    coldUtilitiesAmount = intervals[intervals.length - 1].outgoingHeat;
+
+    console.log(roundedIntervals);
+
+    hotUtilitiesAmount = roundedIntervals[0].incomingHeat;
+    coldUtilitiesAmount = roundedIntervals[roundedIntervals.length - 1].outgoingHeat;
 
     return { hotPinchPoint, coldPinchPoint, hotUtilitiesAmount, coldUtilitiesAmount };
   }

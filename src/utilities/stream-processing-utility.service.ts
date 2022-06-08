@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { interval } from "rxjs";
 import { StreamDataDto } from "src/dto/stream-data.dto";
 import { StreamDto } from "src/dto/stream.dto";
 import { IHeatExchanger } from "src/interfaces/heat-exchanger.interface";
@@ -57,6 +58,7 @@ export class StreamProcessingUtility {
         stream.outletTemp = stream.outletTemp + stream.deltaT / 2;
       }
     }
+
     return shiftedStreams;
   }
 
@@ -80,20 +82,22 @@ export class StreamProcessingUtility {
     }
 
     for (let i = 0; i < tempArray.length - 1; i++) {
-      intervals.push({
-        id: i,
-        start: tempArray[i],
-        end: tempArray[i + 1],
-        deltaT: tempArray[i] - tempArray[i + 1],
-        streamId: [],
-        heatCapDivision: 0,
-        deltaH: 0,
-        heatStatus: "",
-        incomingHeatV1: 0,
-        outgoingHeatV1: 0,
-        incomingHeat: 0,
-        outgoingHeat: 0,
-      });
+      if (tempArray[i] !== tempArray[i + 1]) {
+        intervals.push({
+          id: i,
+          start: tempArray[i],
+          end: tempArray[i + 1],
+          deltaT: tempArray[i] - tempArray[i + 1],
+          streamId: [],
+          heatCapDivision: 0,
+          deltaH: 0,
+          heatStatus: "",
+          incomingHeatV1: 0,
+          outgoingHeatV1: 0,
+          incomingHeat: 0,
+          outgoingHeat: 0,
+        });
+      }
     }
 
     return intervals;
@@ -361,5 +365,27 @@ export class StreamProcessingUtility {
     }
 
     return { hotStream, coldStream };
+  }
+
+  roundValues(intervals: IIntervals[]): IIntervals[] {
+    const result: IIntervals[] = [];
+    for (let interval of intervals) {
+      result.push({
+        id: interval.id,
+        start: parseFloat(interval.start.toFixed(2)),
+        end: parseFloat(interval.end.toFixed(2)),
+        deltaT: parseFloat(interval.deltaT.toFixed(2)),
+        streamId: interval.streamId,
+        heatCapDivision: parseFloat(interval.heatCapDivision.toFixed(2)),
+        deltaH: parseFloat(interval.deltaH.toFixed(2)),
+        heatStatus: interval.heatStatus,
+        incomingHeatV1: parseFloat(interval.incomingHeatV1.toFixed(2)),
+        outgoingHeatV1: parseFloat(interval.outgoingHeatV1.toFixed(2)),
+        incomingHeat: parseFloat(interval.incomingHeat.toFixed(2)),
+        outgoingHeat: parseFloat(interval.outgoingHeat.toFixed(2)),
+      });
+    }
+
+    return result;
   }
 }
