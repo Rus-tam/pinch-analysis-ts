@@ -54,6 +54,10 @@ export class ExchangerSetupUtility {
     hotStreamsTop: IRelativePinchStream[],
     coldStreamsTop: IRelativePinchStream[],
   ): { hotStreamsTop: IRelativePinchStream[]; coldStreamsTop: IRelativePinchStream[]; heatExchAbove: IHeatExchanger[] } {
+    // console.log(hotStreamsTop);
+    // console.log("+++++++++++++++++++++++++++++");
+    // console.log(coldStreamsTop);
+
     const heatExchAbove: IHeatExchanger[] = [];
     let deltaHhot = 0;
     let deltaHcold = 0;
@@ -67,6 +71,10 @@ export class ExchangerSetupUtility {
 
           // Определяем наименьшую энтальпию и с ней работаем
           deltaHres = this.minEntalphy(deltaHhot, deltaHcold);
+
+          if (hotStreamsTop[i].parentId === 4) {
+            console.log(deltaHres / hotStreamsTop[i].flowHeatCapacity);
+          }
 
           // Ставим теплообменник
           heatExchAbove.push({

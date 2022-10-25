@@ -1,0 +1,44 @@
+{
+  "streams":[
+    {
+      "id": 1,
+      "inletTemp": "20",
+      "outletTemp": "180",
+      "massFlow": "1",
+      "heatCapacity": "200",
+      "flowHeatCapacity": "0",
+      "streamType": "",
+      "deltaT": 10
+    },
+    {
+      "id": 2,
+      "inletTemp": "250",
+      "outletTemp": "40",
+      "massFlow": "1",
+      "heatCapacity": "150",
+      "flowHeatCapacity": "0",
+      "streamType": "",
+      "deltaT": 10
+    },
+    {
+      "id": 3,
+      "inletTemp": "140",
+      "outletTemp": "230",
+      "massFlow": "1",
+      "heatCapacity": "300",
+      "flowHeatCapacity": "0",
+      "streamType": "",
+      "deltaT": 10
+    },
+    {
+      "id": 4,
+      "inletTemp": "200",
+      "outletTemp": "80",
+      "massFlow": "1",
+      "heatCapacity": "250",
+      "flowHeatCapacity": "0",
+      "streamType": "",
+      "deltaT": 10
+    }
+  ]
+}

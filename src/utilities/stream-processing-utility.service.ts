@@ -306,7 +306,6 @@ export class StreamProcessingUtility {
       streamType: stream.streamType,
       relativePinch: stream.relativePinch,
     };
-
     const streamTwo: IRelativePinchStream = {
       parentId: stream.parentId,
       inletTemp: stream.inletTemp,
@@ -317,7 +316,6 @@ export class StreamProcessingUtility {
       streamType: stream.streamType,
       relativePinch: stream.relativePinch,
     };
-
     return { streamOne, streamTwo };
   }
 

@@ -1,8 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { interval } from "rxjs";
-import { StreamDto } from "./dto/stream.dto";
 import { IStreamData } from "./interfaces/stream-data.interface";
-import { IUtils } from "./interfaces/utils.interface";
 import { ExchangerSetupUtility } from "./utilities/exchanger-setup-utility.service";
 import { StreamProcessingUtility } from "./utilities/stream-processing-utility.service";
 
@@ -84,13 +81,8 @@ export class AppService {
       coldFlowHeatCap = 0;
     }
 
-    console.log(intervals[2]);
-    // console.log(minValue);
-
     // Округление значений интервалов
     const roundedIntervals = this.streamProcUtility.roundValues(intervals);
-
-    console.log(roundedIntervals[2]);
 
     if (isNegativeValue) {
       for (let i = 0; i < roundedIntervals.length; i++) {
@@ -114,8 +106,6 @@ export class AppService {
         }
       }
     }
-
-    console.log(roundedIntervals);
 
     hotUtilitiesAmount = roundedIntervals[0].incomingHeat;
     coldUtilitiesAmount = roundedIntervals[roundedIntervals.length - 1].outgoingHeat;
@@ -142,6 +132,12 @@ export class AppService {
       hotStreamsBotSplited,
       coldStreamsBotSplited,
     );
+
+    // console.log(hotStreamsTop);
+    // console.log("**************************");
+    // console.log(coldStreamsTop);
+    // console.log("+++++++++++++++++++++++++++");
+    // console.log(heatExchAbove);
 
     // Раставляем теплообменники ниже пинча
     for (let i = 0; i < hotStreamsBot.length; i++) {
